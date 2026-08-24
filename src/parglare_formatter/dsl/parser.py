@@ -1,27 +1,28 @@
 """
-dsl_parser.py
+Parglare parser for the DSL defined in dsl_grammar.py, with semantic
+actions that build dsl_ast.py structures.
 
-Parglare parser za DSL definisan u dsl_grammar.py, sa semantic akcijama
-koje grade dsl_ast.py strukture.
-
-KLJUCNA PRAVILA (v. uvodno poglavlje projekta o parglare API-ju):
-  - Potpis akcije je UVEK action(context, nodes), gde je `nodes` lista
-    rezultata pod-izraza pozicionim redosledom iz RHS produkcije - ne
-    postoji nodes[0][2] stil.
-  - Kad pravilo ima vise produkcija (alternative odvojene '|'), actions[rule]
-    je LISTA callable-ova, jedan po produkciji, istim redosledom kao u
-    gramatici.
-  - Za terminal, drugi parametar akcije nije lista nego sam matched string.
-  - Grammar.from_string(...) proizvodi Grammar instancu; Parser(grammar,
-    actions=actions) prima actions dict direktno kroz konstruktor.
-  - Named matches (name=, params=, body=, left=, right=) u gramatici
-    generisu ugradjenu 'obj' akciju AUTOMATSKI ako ne definisemo custom
-    akciju za to pravilo - ali ovde PISEMO custom akcije svuda gde nam
-    treba tipizirana dsl_ast klasa (npr. RuleDecl umesto generisane
-    anonimne klase), sto je preporucen pristup kad treba sopstvena
-    dataclass hijerarhija. Named matches i dalje mogu da se prime kao
-    extra keyword argumenti akcije (npr. action(context, nodes, name=...,
-    params=..., body=...)) - koristimo taj oblik gde skracuje kod.
+KEY RULES (see the project's introductory chapter on the parglare API):
+  - An action's signature is ALWAYS action(context, nodes), where `nodes`
+    is a list of sub-expression results in positional order from the
+    RHS production - there's no nodes[0][2] style.
+  - When a rule has multiple productions (alternatives separated by '|'),
+    actions[rule] is a LIST of callables, one per production, in the
+    same order as in the grammar.
+  - For a terminal, the action's second parameter is not a list but the
+    matched string itself.
+  - Grammar.from_string(...) produces a Grammar instance; Parser(grammar,
+    actions=actions) receives the actions dict directly via the
+    constructor.
+  - Named matches (name=, params=, body=, left=, right=) in the grammar
+    AUTOMATICALLY generate the built-in 'obj' action if we don't define
+    a custom action for that rule - but here we WRITE custom actions
+    everywhere we need a typed dsl_ast class (e.g. RuleDecl instead of
+    a generated anonymous class), which is the recommended approach
+    when a custom dataclass hierarchy is needed. Named matches can still
+    be received as extra keyword arguments to the action (e.g.
+    action(context, nodes, name=..., params=..., body=...)) - we use
+    that form wherever it shortens the code.
 """
 import re
 
@@ -35,29 +36,26 @@ from .ast import (
     DocFormat, DocList, DocItem, DocAttrRef,
 )
 
-
-# ---------------------------------------------------------------------------
-# RuleFile / RuleDecl / ParamList akcije
-# ---------------------------------------------------------------------------
-
 def _rule_file_action(context, nodes):
-    # RuleFile: RuleDecl+ ;  -> nodes[0] je lista RuleDecl (jer je RuleDecl+
-    # ugradjena repeticija, parglare je vec sabira u listu)
+    # RuleFile: RuleDecl+ ;  -> nodes[0] is a list of RuleDecl (since
+    # RuleDecl+ is a built-in repetition, parglare already collects it
+    # into a list)
     return RuleFile(rules=list(nodes[0]))
 
 
 def _rule_decl_action(context, nodes, name, params, body):
     # RuleDecl: "rule" name=Ident "(" params=ParamList? ")" "=" body=DocExpr ";" ;
-    # named-match kwargs: name (str), params (list[str] ili None), body (DocExpr)
+    # named-match kwargs: name (str), params (list[str] or None), body (DocExpr)
     return RuleDecl(name=name, params=params or [], body=body)
 
 
 def _param_list_action(context, nodes):
     # ParamList: Ident ("," Ident)* ;
-    # nodes[0] je prvi Ident (str), nodes[1] je lista dodatnih Ident-a
-    # prikupljenih iz ("," Ident)* repeticije - parglare vraca listu tuple-a
-    # (",", Ident) po iteraciji ili listu Ident-a zavisno od anonimnog
-    # pravila; ovde eksplicitno filtriramo samo Ident vrednosti.
+    # nodes[0] is the first Ident (str), nodes[1] is a list of the
+    # additional Idents collected from the ("," Ident)* repetition -
+    # parglare returns a list of (",", Ident) pairs per iteration, or a
+    # list of Ident values depending on the anonymous rule; here we
+    # explicitly filter out only the Ident values.
     first = nodes[0]
     rest_group = nodes[1] if len(nodes) > 1 else []
     rest = []
@@ -71,7 +69,7 @@ def _param_list_action(context, nodes):
 
 
 # ---------------------------------------------------------------------------
-# DocExpr / DocTerm akcije
+# DocExpr / DocTerm actions
 # ---------------------------------------------------------------------------
 
 def _doc_expr_concat_action(context, nodes, left, right):
@@ -154,8 +152,9 @@ def _attr_path_action(context, nodes):
 
 
 # ---------------------------------------------------------------------------
-# actions dict - redosled u listama MORA pratiti redosled produkcija u
-# DSL_GRAMMAR (dsl_grammar.py) za pravila sa vise alternativa.
+# actions dict - the order within the lists MUST follow the order of
+# productions in DSL_GRAMMAR (dsl_grammar.py) for rules with multiple
+# alternatives.
 # ---------------------------------------------------------------------------
 
 actions = {
@@ -186,8 +185,9 @@ _grammar_cache = None
 
 
 def get_grammar():
-    """Lazy-builds i kesira Grammar instancu (parsiranje gramatike je
-    relativno skupo, ne treba ga raditi vise puta po procesu)."""
+    """Lazily builds and caches the Grammar instance (parsing the grammar
+    is relatively expensive and shouldn't be done more than once per
+    process)."""
     global _grammar_cache
     if _grammar_cache is None:
         _grammar_cache = Grammar.from_string(DSL_GRAMMAR)
@@ -195,13 +195,13 @@ def get_grammar():
 
 
 def build_parser() -> Parser:
-    """Vraca novi Parser sa registrovanim semantic akcijama."""
+    """Returns a new Parser with the semantic actions registered."""
     grammar = get_grammar()
     return Parser(grammar, actions=actions)
 
 
 def parse_dsl(source: str) -> RuleFile:
-    """Parsira DSL source string i vraca RuleFile AST."""
+    """Parses a DSL source string and returns the RuleFile AST."""
     parser = build_parser()
     result = parser.parse(source)
     return result

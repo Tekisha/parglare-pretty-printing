@@ -1,9 +1,7 @@
 """
-dsl_grammar.py
+DSL grammar for declaratively defining formatting rules.
 
-Gramatika DSL-a za deklarativno definisanje formatting pravila.
-
-Sintaksa DSL-a (primer):
+DSL syntax (example):
 
     rule binary_op(node) =
         format(node.left) ++ text(" + ") ++ format(node.right);
@@ -13,22 +11,25 @@ Sintaksa DSL-a (primer):
         nest(2, line() ++ list(node.stmts, format(item))) ++
         line() ++ text("}");
 
-Napomene o strukturi gramatike (v. uvodno poglavlje projekta):
-  - Svi regex terminali (Ident, StringLiteral, IntLiteral) su definisani
-    u `terminals` bloku na kraju, ne inline u produkcijama.
-  - Whitespace se ne umece rucno WS terminalima u produkcijama - parglare-ov
-    default `ws` parametar (podrazumevano " \t\n\r") u Parser konstruktoru
-    je dovoljan za ovaj DSL, jer nema potrebe za posebnim tretiranjem
-    komentara u ovoj fazi. Ako bude potrebno kasnije, dodaje se posebno
-    LAYOUT pravilo bez izmene ove gramatike.
-  - DocExpr koristi `{left}` disambiguation za operator '++' (levo
-    asocijativna konkatenacija), sto je parglare-ova standardna sintaksa
-    za resavanje shift/reduce konflikta nad rekurzivnim pravilom.
-  - Argumenti poput `node.left` (pristup atributu AST cvora) modelovani su
-    kroz posebno pravilo `AttrPath: Ident ("." Ident)*` da bi DSL mogao da
-    referencira ugnjezdena polja AST cvora bez posebne sintakse za to.
-  - Named matches (name=, params=, body=, left=, right=) se koriste gde
-    god to smanjuje potrebu za rucnim pisanjem akcija - v. dsl_parser.py.
+Notes on grammar structure (see the project's introductory chapter):
+  - All regex terminals (Ident, StringLiteral, IntLiteral) are defined
+    in the `terminals` block at the end, not inline in the productions.
+  - Whitespace is not manually inserted via WS terminals in the
+    productions - parglare's default `ws` parameter (" \t\n\r" by
+    default) in the Parser constructor is sufficient for this DSL,
+    since there's no need for special comment handling at this stage.
+    If needed later, a separate LAYOUT rule can be added without
+    modifying this grammar.
+  - DocExpr uses `{left}` disambiguation for the '++' operator (left
+    associative concatenation), which is parglare's standard syntax
+    for resolving a shift/reduce conflict on a recursive rule.
+  - Arguments like `node.left` (accessing an AST node's attribute) are
+    modeled via a dedicated `AttrPath: Ident ("." Ident)*` rule so the
+    DSL can reference nested AST node fields without special syntax
+    for it.
+  - Named matches (name=, params=, body=, left=, right=) are used
+    wherever they reduce the need for manually writing actions - see
+    dsl_parser.py.
 """
 
 DSL_GRAMMAR = r"""

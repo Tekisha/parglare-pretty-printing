@@ -67,8 +67,12 @@ class TestSimpleRules:
         assert len(result.rules) == 2
         names = [r.name for r in result.rules]
         assert names == ["a", "b"]
-        as_dict = result.as_dict()
-        assert set(as_dict.keys()) == {"a", "b"}
+        assert len(result) == 2
+        assert "a" in result
+        assert "b" in result
+        assert "c" not in result
+        assert result.get_rule("a").name == "a"
+        assert result.get_rule("b").name == "b"
 
 
 class TestDocTermVariants:

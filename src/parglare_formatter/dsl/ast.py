@@ -1,37 +1,32 @@
 """
-dsl_ast.py
+AST classes for DocExpr - the result of parsing the DSL defined in
+dsl_grammar.py. This is the PARSE-TIME representation of formatting
+rules (as opposed to Doc from document_model.py, which is the RUNTIME
+representation of a concrete document after the DocExpr AST has been
+compiled/evaluated against a concrete AST node in dsl_compiler.py,
+Phase 6).
 
-AST klase za DocExpr - rezultat parsiranja DSL-a definisanog u
-dsl_grammar.py. Ovo JE PARSE-TIME predstava formatting pravila
-(razlikuje se od Doc iz document_model.py, koji je RUNTIME predstava
-konkretnog dokumenta nakon sto je DocExpr AST kompiliran/evaluiran nad
-konkretnim AST cvorom u dsl_compiler.py, Faza 6).
-
-Sve klase su plain dataclass-ovi bez ponasanja - cista struktura koju
-kompajler (Faza 6) obilazi i prevodi u Doc pozive iz document_model.py.
+All classes are plain, behaviorless dataclasses - pure structure that
+the compiler (Phase 6) traverses and translates into Doc calls from
+document_model.py.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
 
 
 @dataclass
 class AttrPath:
-    """Predstavlja pristup atributu AST cvora, npr. 'node.left.value'."""
+    """Represents access to an AST node's attribute, e.g. 'node.left.value'."""
     parts: List[str]
 
     def __str__(self) -> str:
         return ".".join(self.parts)
 
 
-# ---------------------------------------------------------------------------
-# DocExpr varijante - jedna klasa po alternativi DocTerm produkcije,
-# plus DocConcat za '++' operator iz DocExpr produkcije.
-# ---------------------------------------------------------------------------
-
 @dataclass
 class DocConcat:
-    """DocExpr '++' DocTerm - levo asocijativna konkatenacija."""
+    """DocExpr '++' DocTerm - left-associative concatenation."""
     left: "DocExpr"
     right: "DocExpr"
 
@@ -75,38 +70,42 @@ class DocAlign:
 
 @dataclass
 class DocFormat:
-    """format(AttrPath) - rekurzivan poziv formatter-a nad podcvorom."""
+    """format(AttrPath) - recursive call into the formatter for a sub-node."""
     path: AttrPath
 
 
 @dataclass
 class DocList:
-    """list(AttrPath, DocExpr) - mapira DocExpr preko svake stavke liste
-    dostupne kroz AttrPath, uz 'item' kao referencu na trenutnu stavku
-    unutar tela DocExpr (v. DocItem)."""
+    """list(AttrPath, DocExpr) - maps DocExpr over every item reachable via
+    AttrPath, with 'item' as the reference to the current element inside
+    the DocExpr body (see DocItem)."""
     path: AttrPath
     body: "DocExpr"
 
 
 @dataclass
 class DocItem:
-    """'item' - referenca na trenutnu stavku unutar tela list(...)."""
+    """'item' - reference to the current element inside a list(...) body."""
     pass
 
 
 @dataclass
 class DocAttrRef:
-    """Golo AttrPath kao DocTerm - referenca na atribut cvora cija se
-    vrednost direktno umece kao tekst (npr. za primitivne tipove polja)."""
+    """A bare AttrPath as a DocTerm - a reference to a node's attribute
+    whose value is inserted directly as text (e.g. for primitive fields)."""
     path: AttrPath
 
 
-DocExpr = "DocConcat | DocText | DocLine | DocSoftline | DocNest | " \
-          "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef"
+# DocExpr = "DocConcat | DocText | DocLine | DocSoftline | DocNest | " \
+#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef"
 
+DocExpr = Union[
+    DocConcat, DocText, DocLine, DocSoftline, DocNest,
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef
+]
 
 # ---------------------------------------------------------------------------
-# RuleDecl / RuleFile - vrh AST-a DSL-a
+# RuleDecl / RuleFile - top of the DSL's AST
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -119,9 +118,36 @@ class RuleDecl:
 
 @dataclass
 class RuleFile:
-    """Lista svih RuleDecl iz jednog .dsl fajla."""
+    """All RuleDecl entries parsed from a single .dsl file."""
     rules: List[RuleDecl] = field(default_factory=list)
+    _by_name: Dict[str, RuleDecl] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
 
-    def as_dict(self) -> dict:
-        """Vraca mapping rule_name -> RuleDecl, korisno za formatter.py."""
-        return {r.name: r for r in self.rules}
+    def __post_init__(self) -> None:
+        by_name: Dict[str, RuleDecl] = {}
+        for r in self.rules:
+            if r.name in by_name:
+                raise ValueError(
+                    f"Duplicate rule name {r.name!r} in RuleFile "
+                    f"(rule names must be unique)"
+                )
+            by_name[r.name] = r
+        self._by_name = by_name
+
+    def get_rule(self, name: str) -> RuleDecl:
+        """Looks up a rule by name; raises a KeyError listing available
+        rule names if not found, instead of a bare KeyError(name)."""
+        try:
+            return self._by_name[name]
+        except KeyError:
+            available = list(self._by_name)
+            raise KeyError(
+                f"No rule named {name!r}. Available rules: {available}"
+            ) from None
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._by_name
+
+    def __len__(self) -> int:
+        return len(self.rules)
