@@ -74,6 +74,12 @@ class TestSimpleRules:
         assert result.get_rule("a").name == "a"
         assert result.get_rule("b").name == "b"
 
+    def test_get_rule_missing_raises_keyerror(self):
+        src = 'rule a(node) = text("A");'
+        result = parse_dsl(src)
+        with pytest.raises(KeyError, match="a"):
+            result.get_rule("nonexistent")
+
 
 class TestDocTermVariants:
     def test_line_term(self):
