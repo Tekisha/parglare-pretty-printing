@@ -1,9 +1,3 @@
-"""
-tests/test_document_model.py
-
-Testovi za Fazu 1: Document Model.
-"""
-
 import pytest
 
 from src.parglare_formatter.document_model import (

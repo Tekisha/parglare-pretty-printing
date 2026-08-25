@@ -1,13 +1,3 @@
-"""
-tests/test_dsl_parser.py
-
-Testovi za Fazu 2: DSL Parser.
-
-Testovi koji zahtevaju stvarno parglare parsiranje su markirani i
-automatski se skip-uju ako paket `parglare` nije instaliran u okruzenju
-(npr. sandbox bez interneta) - pokreni ih lokalno sa `pip install parglare`.
-"""
-
 import pytest
 
 parglare = pytest.importorskip(
