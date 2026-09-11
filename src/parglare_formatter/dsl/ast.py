@@ -81,6 +81,7 @@ class DocList:
     the DocExpr body (see DocItem)."""
     path: AttrPath
     body: "DocExpr"
+    separator: Optional["DocExpr"] = None
 
 
 @dataclass

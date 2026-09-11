@@ -50,10 +50,12 @@ DocTerm: "text" "(" StringLiteral ")"
        | "group" "(" DocExpr ")"
        | "align" "(" DocExpr ")"
        | "format" "(" AttrPath ")"
-       | "list" "(" AttrPath "," DocExpr ")"
+       | "list" "(" path=AttrPath "," body=DocExpr opt_sep=ListSeparator? ")"
        | "item"
        | AttrPath
        ;
+
+ListSeparator: "," separator=DocExpr ;
 
 AttrPath: Ident (Dot Ident)* ;
 

@@ -122,11 +122,9 @@ def _doc_term_format_action(context, nodes):
     return DocFormat(path=nodes[2])
 
 
-def _doc_term_list_action(context, nodes):
-    # DocTerm: "list" "(" AttrPath "," DocExpr ")" ;
-    # nodes: ["list", "(", <AttrPath>, ",", <DocExpr>, ")"]
-    return DocList(path=nodes[2], body=nodes[4])
-
+def _doc_term_list_action(context, nodes, path, body, opt_sep):
+    separator = opt_sep.separator if opt_sep else None
+    return DocList(path=path, body=body, separator=separator)
 
 def _doc_term_item_action(context, nodes):
     # DocTerm: "item" ;
@@ -136,6 +134,10 @@ def _doc_term_item_action(context, nodes):
 def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
     return DocAttrRef(path=nodes[0])
+
+def _list_separator_action(context, nodes):
+    # ListSeparator: "," DocExpr ;
+    return nodes[1]
 
 
 def _attr_path_action(context, nodes):

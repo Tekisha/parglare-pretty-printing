@@ -125,6 +125,9 @@ def compile_doc_expr(
                 f"list({expr.path}, ...) expects iterable, got "
                 f"{type(collection).__name__!r}"
             )
+
+        separator_expr = expr.separator if expr.separator is not None else DocLine()
+
         docs = []
         for item in items:
             item_bindings = dict(bindings)
@@ -132,9 +135,12 @@ def compile_doc_expr(
             docs.append(compile_doc_expr(expr.body, item_bindings, format_node))
         if not docs:
             return empty()
+
+        separator_doc = compile_doc_expr(separator_expr, bindings, format_node)
+
         result = docs[0]
         for d in docs[1:]:
-            result = concat(result, concat(line(), d))
+            result = concat(result, concat(separator_doc, d))
         return result
 
     elif isinstance(expr, DocItem):
