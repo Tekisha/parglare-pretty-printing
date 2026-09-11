@@ -88,7 +88,7 @@ class TestDocFormatDelegatesToCallback:
         assert render(doc) == "<formatted>"
 
 
-class TestDocListPunctuation:
+class TestDocListDefaultSeparator:
     def test_empty_list_produces_empty_doc(self):
         node = Block(stmts=[])
         expr = DocList(path=AttrPath(["node", "stmts"]), body=DocFormat(path=AttrPath([ITEM_KEY])))
@@ -99,7 +99,7 @@ class TestDocListPunctuation:
         doc = compile_doc_expr(expr, {"node": node}, fmt)
         assert render(doc) == ""
 
-    def test_single_item_no_separator(self):
+    def test_single_item_no_separator_emitted(self):
         node = Block(stmts=[ExprStmt(expr=Identifier(name="a"))])
         expr = DocList(path=AttrPath(["node", "stmts"]), body=DocFormat(path=AttrPath([ITEM_KEY])))
 
@@ -110,7 +110,7 @@ class TestDocListPunctuation:
         doc = compile_doc_expr(expr, {"node": node}, fmt)
         assert render(doc) == "STMT"
 
-    def test_multiple_items_separated_by_line(self):
+    def test_multiple_items_separated_by_default_line(self):
         node = Block(stmts=[ExprStmt(expr=Identifier(name="a")), ExprStmt(expr=Identifier(name="b")), ExprStmt(expr=Identifier(name="c"))])
         expr = DocList(path=AttrPath(["node", "stmts"]), body=DocFormat(path=AttrPath([ITEM_KEY])))
 
@@ -124,12 +124,89 @@ class TestDocListPunctuation:
         doc = compile_doc_expr(expr, {"node": node}, fmt)
         assert render(doc, width=1000) == "S1\nS2\nS3"
 
+    def test_default_separator_field_is_none_when_unset(self):
+        expr = DocList(path=AttrPath(["node", "stmts"]), body=DocItem())
+        assert expr.separator is None
+
     def test_list_over_non_iterable_raises_compile_error(self):
         class HasIntAttr:
             count = 5
         expr = DocList(path=AttrPath(["node", "count"]), body=DocFormat(path=AttrPath([ITEM_KEY])))
         with pytest.raises(CompileError, match="iterable"):
             compile_doc_expr(expr, {"node": HasIntAttr()}, _noop_format_node)
+
+
+class TestDocListExplicitSeparator:
+    def test_text_comma_separator_for_inline_list(self):
+        node = Call(callee="print", args=[Identifier(name="x"), NumberLiteral(value=42)])
+        expr = DocList(
+            path=AttrPath(["node", "args"]),
+            body=DocItem(),
+            separator=DocText(value=", "),
+        )
+
+        def fmt(n):
+            if isinstance(n, Identifier):
+                return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "name"])), {"node": n}, fmt)
+            elif isinstance(n, NumberLiteral):
+                return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "value"])), {"node": n}, fmt)
+            raise CompileError("no rule")
+
+        doc = compile_doc_expr(expr, {"node": node}, fmt)
+        assert render(doc, width=1000) == "x, 42"
+
+    def test_separator_not_emitted_around_single_item(self):
+        node = Call(callee="f", args=[Identifier(name="only")])
+        expr = DocList(path=AttrPath(["node", "args"]), body=DocItem(), separator=DocText(value=", "))
+
+        def fmt(n):
+            return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "name"])), {"node": n}, fmt)
+
+        doc = compile_doc_expr(expr, {"node": node}, fmt)
+        assert render(doc) == "only"
+
+    def test_separator_not_emitted_for_empty_list(self):
+        node = Call(callee="f", args=[])
+        expr = DocList(path=AttrPath(["node", "args"]), body=DocItem(), separator=DocText(value=", "))
+        doc = compile_doc_expr(expr, {"node": node}, _noop_format_node)
+        assert render(doc) == ""
+
+    def test_softline_separator_allows_flat_or_broken(self):
+        node = Call(callee="f", args=[Identifier(name="x"), NumberLiteral(value=42)])
+        sep = DocConcat(left=DocText(value=","), right=DocSoftline())
+        expr = DocGroup(body=DocList(path=AttrPath(["node", "args"]), body=DocItem(), separator=sep))
+
+        def fmt(n):
+            if isinstance(n, Identifier):
+                return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "name"])), {"node": n}, fmt)
+            elif isinstance(n, NumberLiteral):
+                return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "value"])), {"node": n}, fmt)
+            raise CompileError("no rule")
+
+        doc = compile_doc_expr(expr, {"node": node}, fmt)
+        assert render(doc, width=80) == "x, 42"
+        assert render(doc, width=3) == "x,\n42"
+
+    def test_separator_resolved_in_outer_bindings_not_item_context(self):
+        node = Call(callee="f", args=[Identifier(name="x"), NumberLiteral(value=42)])
+        bad_separator = DocFormat(path=AttrPath(["item"]))
+        expr = DocList(path=AttrPath(["node", "args"]), body=DocItem(), separator=bad_separator)
+
+        def fmt(n):
+            return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "name"])), {"node": n}, fmt)
+
+        with pytest.raises(CompileError, match="does not have attribute"):
+            compile_doc_expr(expr, {"node": node}, fmt)
+
+    def test_multi_item_list_with_custom_separator_and_nest(self):
+        node = Call(callee="f", args=[Identifier(name="a"), Identifier(name="b"), Identifier(name="c")])
+        expr = DocList(path=AttrPath(["node", "args"]), body=DocItem(), separator=DocText(value=" | "))
+
+        def fmt(n):
+            return compile_doc_expr(DocAttrRef(path=AttrPath(["node", "name"])), {"node": n}, fmt)
+
+        doc = compile_doc_expr(expr, {"node": node}, fmt)
+        assert render(doc) == "a | b | c"
 
 
 class TestDocItemOutsideList:

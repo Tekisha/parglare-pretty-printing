@@ -187,6 +187,15 @@ class TestRealisticRule:
         assert isinstance(top.right, DocText)
         assert top.right.value == "}"
 
+    def test_call_rule_with_comma_separated_args(self):
+        q = chr(34)
+        src = (
+            "rule Call(node) = node.callee ++ text(" + q + "(" + q + ") ++ "
+            "list(node.args, item, text(" + q + ", " + q + ")) ++ text(" + q + ")" + q + ");"
+        )
+        rule = parse_dsl(src).rules[0]
+        assert rule.name == "Call"
+
 
 class TestWhitespaceHandling:
     def test_rule_with_varied_whitespace_and_newlines(self):
@@ -205,3 +214,31 @@ class TestStringLiteralEscaping:
         rule = parse_dsl(src).rules[0]
         assert isinstance(rule.body, DocText)
         assert rule.body.value == 'say "hi"'
+
+class TestListWithoutSeparator:
+    def test_list_two_args_separator_is_none(self):
+        src = "rule r(node) = list(node.stmts, format(item));"
+        rule = parse_dsl(src).rules[0]
+        assert isinstance(rule.body, DocList)
+        assert rule.body.separator is None
+
+
+class TestListWithSeparator:
+    def test_list_three_args_separator_is_set(self):
+        q = chr(34)
+        src = "rule r(node) = list(node.args, format(item), text(" + q + ", " + q + "));"
+        rule = parse_dsl(src).rules[0]
+        assert isinstance(rule.body, DocList)
+        assert rule.body.separator is not None
+        assert isinstance(rule.body.separator, DocText)
+        assert rule.body.separator.value == ", "
+
+    def test_list_with_line_separator(self):
+        src = "rule r(node) = list(node.args, format(item), line());"
+        rule = parse_dsl(src).rules[0]
+        assert isinstance(rule.body.separator, DocLine)
+
+    def test_list_with_softline_separator(self):
+        src = "rule r(node) = list(node.args, format(item), softline());"
+        rule = parse_dsl(src).rules[0]
+        assert isinstance(rule.body.separator, DocSoftline)
