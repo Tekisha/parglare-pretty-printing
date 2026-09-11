@@ -135,10 +135,6 @@ def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
     return DocAttrRef(path=nodes[0])
 
-def _list_separator_action(context, nodes):
-    # ListSeparator: "," DocExpr ;
-    return nodes[1]
-
 
 def _attr_path_action(context, nodes):
     # AttrPath: Ident ("." Ident)* ;
