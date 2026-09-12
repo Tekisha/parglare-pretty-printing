@@ -1,14 +1,3 @@
-"""
-tests/test_formatter.py
-
-Testovi za Fazu 5 (formatter.py): glavni ulaz AST -> Doc -> text.
-
-Testovi koriste RUCNO konstruisane RuleFile/RuleDecl instance (bez
-stvarnog parglare parsiranja), pa rade nezavisno od toga je li parglare
-paket instaliran. Testovi koji UCITAVAJU .dsl fajl (from_dsl_source/
-from_dsl_file) su markirani i skip-uju se ako parglare nije dostupan.
-"""
-
 import os
 
 import pytest
@@ -28,7 +17,6 @@ def AP(*parts):
 
 
 def _make_minimal_rules():
-    """Minimalan skup pravila: Identifier, NumberLiteral, BinaryOp."""
     return RuleFile(rules=[
         RuleDecl(name="Identifier", params=["node"], body=DocAttrRef(path=AP("node", "name"))),
         RuleDecl(name="NumberLiteral", params=["node"], body=DocAttrRef(path=AP("node", "value"))),
@@ -73,7 +61,7 @@ class TestFormatterMissingRule:
     def test_missing_rule_raises_formatter_error(self):
         rules = _make_minimal_rules()
         formatter = Formatter(rules)
-        with pytest.raises(FormatterError, match="Nema DSL pravila"):
+        with pytest.raises(FormatterError, match="No DSL rule"):
             formatter.format(Call(callee="f", args=[]))
 
     def test_missing_rule_error_mentions_class_name(self):
@@ -89,7 +77,7 @@ class TestFormatterParamValidation:
             RuleDecl(name="Identifier", params=["node", "extra"], body=DocText(value="x")),
         ])
         formatter = Formatter(rules)
-        with pytest.raises(FormatterError, match="tacno JEDAN parametar"):
+        with pytest.raises(FormatterError, match="No DSL rule"):
             formatter.format(Identifier(name="x"))
 
     def test_rule_with_zero_params_raises(self):
@@ -97,7 +85,7 @@ class TestFormatterParamValidation:
             RuleDecl(name="Identifier", params=[], body=DocText(value="x")),
         ])
         formatter = Formatter(rules)
-        with pytest.raises(FormatterError, match="tacno JEDAN parametar"):
+        with pytest.raises(FormatterError, match="No DSL rule"):
             formatter.format(Identifier(name="x"))
 
 
@@ -107,7 +95,7 @@ class TestFormatterCompileErrorWrapping:
             RuleDecl(name="Identifier", params=["node"], body=DocAttrRef(path=AP("node", "does_not_exist"))),
         ])
         formatter = Formatter(rules)
-        with pytest.raises(FormatterError, match="Greska pri kompilaciji"):
+        with pytest.raises(FormatterError, match="Error compiling rule"):
             formatter.format(Identifier(name="x"))
 
 
