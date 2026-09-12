@@ -1,23 +1,21 @@
 """
-formatter.py
+Main entry point of the system: AST → Doc → text.
 
-Glavni ulaz sistema: AST -> Doc -> text.
+Formatter connects all previous phases:
+  - Phase 2 (dsl_parser.py)   - parses .dsl file into RuleFile AST
+  - Phase 6 (dsl_compiler.py) - compiles a SINGLE rule (DocExpr) to Doc
+                                for a concrete AST node
+  - Phase 3 (layout_engine.py) - renders Doc to final string
 
-Formatter povezuje sve prethodne faze:
-  - Faza 2 (dsl_parser.py)   - parsira .dsl fajl u RuleFile
-  - Faza 6 (dsl_compiler.py) - kompilira JEDNO pravilo (DocExpr) u Doc,
-                                nad konkretnim AST cvorom
-  - Faza 3 (layout_engine.py) - renderuje Doc u konacan string
+The key responsibility of formatter.py (not covered in previous phases) is
+RULE SELECTION by Python class name of the concrete AST node. This is the
+`format_node` callback that dsl_compiler.py calls recursively for
+`format(...)`, `list(...)`, and bare `item`.
 
-Kljucna odgovornost formatter.py koja NIJE bila u prethodnim fazama je
-BIRANJE PRAVILA po imenu Python klase konkretnog AST cvora - to je
-`format_node` callback koji dsl_compiler.py poziva rekurzivno za
-`format(...)`, `list(...)` i goli `item`.
-
-Konvencija: DSL pravilo `rule BinaryOp(node) = ...` se primenjuje na
-SVAKI AST cvor cija je Python klasa `BinaryOp` (type(node).__name__).
-Ime prvog parametra pravila (obicno "node") postaje kljuc u bindings
-mapi na koji se cvor vezuje.
+Convention: DSL rule `rule BinaryOp(node) = ...` applies to EVERY AST node
+whose Python class is `BinaryOp` (type(node).__name__). The first parameter
+name of the rule (typically "node") becomes the key in the bindings map
+to which the node is bound.
 """
 
 from typing import Any, Dict, Optional
@@ -30,21 +28,20 @@ from src.parglare_formatter.layout_engine import render
 
 
 class FormatterError(Exception):
-    """Greska pri formatiranju - nedostaje pravilo za dati tip cvora,
-    ili je pravilo definisano sa pogresnim brojem parametara."""
+    """Raised when formatting fails e.g., no DSL rule for a node type,
+    or a rule has wrong number of parameters."""
     pass
 
 
 class Formatter:
     """
-    Formatter ucitava skup DSL pravila (RuleFile) i primenjuje ih nad
-    konkretnim AST stablom, birajuci pravilo po imenu Python klase cvora.
+    Main entry point: loads DSL rules and formats AST nodes by selecting
+    the rule whose name matches the node's Python class.
 
-    Primer koriscenja:
+    Example:
 
-        rule_file = parse_dsl(open("formatting_rules.dsl").read())
-        formatter = Formatter(rule_file)
-        text_output = formatter.format(my_ast_root, width=80)
+        formatter = Formatter.from_dsl_file("formatting_rules.dsl")
+        text = formatter.format(my_ast_root, width=80)
     """
 
     def __init__(self, rule_file: RuleFile):
@@ -52,40 +49,39 @@ class Formatter:
 
     @classmethod
     def from_dsl_source(cls, source: str) -> "Formatter":
-        """Pogodan konstruktor: parsira DSL izvor i odmah pravi Formatter."""
+        """Convenience constructor: parse DSL source and create Formatter."""
         return cls(parse_dsl(source))
 
     @classmethod
     def from_dsl_file(cls, path: str) -> "Formatter":
-        """Ucitava .dsl fajl sa diska i pravi Formatter."""
+        """Load .dsl file from disk and create Formatter."""
         with open(path, "r", encoding="utf-8") as f:
             source = f.read()
         return cls.from_dsl_source(source)
 
     def _rule_name_for(self, node: Any) -> str:
-        """Ime DSL pravila koje odgovara datom AST cvoru - po konvenciji,
-        ime Python klase cvora (type(node).__name__)."""
+        """Return DSL rule name for given AST node - by convention,
+        the node's Python class name (type(node).__name__)."""
         return type(node).__name__
 
     def format_node(self, node: Any) -> Doc:
         """
-        Kompilira JEDAN AST cvor u Doc, birajuci odgovarajuce DSL pravilo
-        po imenu njegove Python klase. Ovo je `format_node` callback koji
-        dsl_compiler.compile_doc_expr poziva rekurzivno za format(...),
-        list(...) i goli item.
+        Compile single AST node to Doc by selecting matching DSL rule.
+        This is the `format_node` callback that dsl_compiler.compile_doc_expr
+        calls recursively for format(...), list(...), and bare item.
         """
         rule_name = self._rule_name_for(node)
         if rule_name not in self.rule_file:
             raise FormatterError(
-                f"Nema DSL pravila za tip cvora {rule_name!r}. "
-                f"Definisi 'rule {rule_name}(node) = ...;' u .dsl fajlu."
+                f"No DSL rule for node type {rule_name!r}. "
+                f"Define 'rule {rule_name}(node) = ...;' in .dsl file."
             )
         rule = self.rule_file.get_rule(rule_name)
 
         if len(rule.params) != 1:
             raise FormatterError(
-                f"Pravilo {rule_name!r} mora imati tacno JEDAN parametar "
-                f"(konvencija: 'node'), a ima {len(rule.params)}: {rule.params}"
+                f"No DSL rule for node type {rule_name!r}. "
+                f"Define 'rule {rule_name}(node) = ...;' in .dsl file."
             )
         param_name = rule.params[0]
         bindings: Dict[str, Any] = {param_name: node}
@@ -94,21 +90,20 @@ class Formatter:
             return compile_doc_expr(rule.body, bindings, self.format_node)
         except CompileError as e:
             raise FormatterError(
-                f"Greska pri kompilaciji pravila {rule_name!r} nad cvorom "
-                f"{node!r}: {e}"
+                f"Error compiling rule {rule_name!r} for node {node!r}: {e}"
             ) from e
 
     def format(self, node: Any, width: int = 80) -> str:
         """
-        Formatira dati AST cvor (i sve pod-cvorove, rekurzivno) u konacan
-        string, koristeci layout_engine.render() sa datom sirinom linije.
+        Format given AST node (and all sub-nodes, recursively) to final
+        string using layout_engine.render() with given line width.
         """
         doc = self.format_node(node)
         return render(doc, width=width)
 
 
 def format_ast(node: Any, dsl_source: str, width: int = 80) -> str:
-    """Funkcionalni prijatelj-fasada: parsira DSL izvor i odmah formatira
-    dati cvor, u jednom pozivu - korisno za jednokratnu upotrebu / skripte."""
+    """Functional facade: parse DSL source and immediately format given
+    node in one call, useful for one-off usage / scripts."""
     formatter = Formatter.from_dsl_source(dsl_source)
     return formatter.format(node, width=width)
