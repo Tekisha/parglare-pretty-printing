@@ -1,7 +1,7 @@
 import pytest
 
 parglare = pytest.importorskip(
-    "parglare", reason="parglare nije instaliran - pokreni 'pip install parglare' lokalno"
+    "parglare", reason="parglare has not been installed - run 'pip install parglare' locally"
 )
 
 from src.parglare_formatter.dsl.grammar import DSL_GRAMMAR

@@ -1,14 +1,3 @@
-"""
-examples/test_code.py
-
-Demonstracija formatter.py end-to-end: konstruise mini-language AST
-RUCNO (nemamo parser za sam mini-language, samo za DSL formatting pravila),
-ucitava formatting_rules.dsl, i ispisuje formatiran tekst.
-
-Pokretanje:
-    python -m parglare_formatter.examples.test_code
-"""
-
 import os
 
 from src.parglare_formatter.examples.mini_lang.ast_nodes import (
@@ -19,8 +8,6 @@ from src.parglare_formatter.formatter.formatter import Formatter
 
 def build_sample_ast() -> Block:
     """
-    Konstruise AST ekvivalentan sledecem mini-language kodu:
-
         x = 1 + 2 * 3;
         print(x, 42);
         if (x > 0) {
