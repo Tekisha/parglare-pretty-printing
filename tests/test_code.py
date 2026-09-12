@@ -1,7 +1,7 @@
 import os
 
 from src.parglare_formatter.examples.mini_lang.ast_nodes import (
-    Identifier, NumberLiteral, BinaryOp, Call, Assign, ExprStmt, Block, If,
+    Identifier, NumberLiteral, BinaryOp, Call, Assign, ExprStmt, Block, If, For, FuncDef
 )
 from src.parglare_formatter.formatter.formatter import Formatter
 
@@ -33,13 +33,48 @@ def build_sample_ast() -> Block:
     ])
 
 
+def build_extended_ast() -> Block:
+    """
+        function sum_range(a, b) {
+            total = 0;
+            for (i in a..b) {
+                total = total + i;
+            }
+        }
+    """
+    return Block(stmts=[
+        FuncDef(
+            name="sum_range",
+            params=["a", "b"],
+            body=Block(stmts=[
+                Assign(target="total", value=NumberLiteral(value=0)),
+                For(
+                    var="i",
+                    start=Identifier(name="a"),
+                    end=Identifier(name="b"),
+                    body=Block(stmts=[
+                        Assign(
+                            target="total",
+                            value=BinaryOp(op="+", left=Identifier(name="total"), right=Identifier(name="i")),
+                        ),
+                    ]),
+                ),
+            ]),
+        ),
+    ])
+
+
 def main() -> None:
     dsl_path = os.path.join(os.path.dirname(__file__), "formatting_rules.dsl")
     formatter = Formatter.from_dsl_file(dsl_path)
 
-    ast_root = build_sample_ast()
-    output = formatter.format(ast_root, width=40)
-    print(output)
+    print("=== Simple example ===")
+    print(formatter.format(build_sample_ast(), width=40))
+
+    print()
+    print("=== Extended example ===")
+    print(formatter.format(build_extended_ast(), width=40))
+
 
 
 if __name__ == "__main__":
