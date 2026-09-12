@@ -23,7 +23,7 @@ from typing import Any, Dict, Optional
 from src.parglare_formatter.dsl.ast import RuleFile
 from src.parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
 from src.parglare_formatter.dsl.parser import parse_dsl
-from src.parglare_formatter.document_model import Doc
+from src.parglare_formatter.document_model import Doc, text
 from src.parglare_formatter.layout_engine import render
 
 
@@ -43,6 +43,7 @@ class Formatter:
         formatter = Formatter.from_dsl_file("formatting_rules.dsl")
         text = formatter.format(my_ast_root, width=80)
     """
+    _PRIMITIVE_TYPES = (str, int, float, bool)
 
     def __init__(self, rule_file: RuleFile):
         self.rule_file = rule_file
@@ -72,6 +73,9 @@ class Formatter:
         """
         rule_name = self._rule_name_for(node)
         if rule_name not in self.rule_file:
+            if isinstance(node, self._PRIMITIVE_TYPES):
+                return text(str(node))
+
             raise FormatterError(
                 f"No DSL rule for node type {rule_name!r}. "
                 f"Define 'rule {rule_name}(node) = ...;' in .dsl file."
@@ -80,8 +84,8 @@ class Formatter:
 
         if len(rule.params) != 1:
             raise FormatterError(
-                f"No DSL rule for node type {rule_name!r}. "
-                f"Define 'rule {rule_name}(node) = ...;' in .dsl file."
+                f"Rule {rule_name!r} must have exactly ONE parameter "
+                f"(convention: 'node'), but has {len(rule.params)}: {rule.params}"
             )
         param_name = rule.params[0]
         bindings: Dict[str, Any] = {param_name: node}

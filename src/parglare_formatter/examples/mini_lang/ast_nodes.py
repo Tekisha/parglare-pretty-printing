@@ -80,5 +80,20 @@ class If:
     cond: "Expr"
     then_branch: "Block"
 
+@dataclass
+class For:
+    """for (var in start..end) { body }"""
+    var: str
+    start: "Expr"
+    end: "Expr"
+    body: "Block"
 
-Stmt = Union[Assign, ExprStmt, Block, If]
+
+@dataclass
+class FuncDef:
+    """function name(param1, param2, ...) { body }"""
+    name: str
+    params: List[str] = field(default_factory=list)
+    body: "Block" = None
+
+Stmt = Union[Assign, ExprStmt, Block, If, For, FuncDef]

@@ -13,3 +13,7 @@ rule ExprStmt(node) = format(node.expr) ++ text(";");
 rule Block(node) = text("{") ++ nest(2, line() ++ list(node.stmts, item)) ++ line() ++ text("}");
 
 rule If(node) = text("if (") ++ format(node.cond) ++ text(") ") ++ format(node.then_branch);
+
+rule For(node) = text("for (") ++ node.var ++ text(" in ") ++ format(node.start) ++ text("..") ++ format(node.end) ++ text(") ") ++ format(node.body);
+
+rule FuncDef(node) = text("function ") ++ node.name ++ text("(") ++ align(list(node.params, item, text(", "))) ++ text(") ") ++ format(node.body);
