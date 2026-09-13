@@ -20,11 +20,11 @@ to which the node is bound.
 
 from typing import Any, Dict, Optional
 
-from src.parglare_formatter.dsl.ast import RuleFile
-from src.parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
-from src.parglare_formatter.dsl.parser import parse_dsl
-from src.parglare_formatter.document_model import Doc, text
-from src.parglare_formatter.layout_engine import render
+from parglare_formatter.dsl.ast import RuleFile
+from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
+from parglare_formatter.dsl.parser import parse_dsl
+from parglare_formatter.document_model import Doc, text
+from parglare_formatter.layout_engine import render
 
 
 class FormatterError(Exception):

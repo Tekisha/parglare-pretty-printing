@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.8"
 dependencies = [
-    "parglare>=2.0.0",
+    "parglare>=0.22.0",
 ]
 
 [tool.setuptools.packages.find]
