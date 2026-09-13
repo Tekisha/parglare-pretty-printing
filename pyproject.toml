@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "parglare_formatter"
+name = "parglare-formatter"
 version = "0.1.0"
 description = "AST-to-text formatting DSL integrated with Parglare"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.8"
 dependencies = [
     "parglare>=2.0.0",
@@ -19,3 +19,4 @@ include = ["parglare_formatter*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
