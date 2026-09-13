@@ -1,6 +1,6 @@
 import pytest
 
-from src.parglare_formatter.document_model import (
+from parglare_formatter.document_model import (
     Text, Line, Concat, Nest, Group, Align, Empty,
     text, line, softline, concat, nest, group, align, empty, concat_all,
 )

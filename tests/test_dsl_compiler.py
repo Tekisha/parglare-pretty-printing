@@ -1,14 +1,13 @@
 import pytest
 
-from src.parglare_formatter.dsl.ast import (
+from parglare_formatter.dsl.ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
     DocAlign, DocFormat, DocList, DocItem, DocAttrRef,
 )
-from src.parglare_formatter.dsl.compiler import compile_doc_expr, CompileError, ITEM_KEY
-from src.parglare_formatter.layout_engine import render
-from src.parglare_formatter.examples.mini_lang.ast_nodes import (
-    Identifier, NumberLiteral, BinaryOp, Call, Block, ExprStmt, Assign, If,
-)
+from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError, ITEM_KEY
+from parglare_formatter.layout_engine import render
+from tests.mini_lang.ast_nodes import (
+    Identifier, NumberLiteral, BinaryOp, Call, Block, ExprStmt, )
 
 
 def _noop_format_node(node):
@@ -76,7 +75,7 @@ class TestDocFormatDelegatesToCallback:
 
         def fake_format_node(node):
             called_with.append(node)
-            from src.parglare_formatter.document_model import text
+            from parglare_formatter.document_model import text
             return text("<formatted>")
 
         inner = NumberLiteral(value=42)
@@ -104,7 +103,7 @@ class TestDocListDefaultSeparator:
         expr = DocList(path=AttrPath(["node", "stmts"]), body=DocFormat(path=AttrPath([ITEM_KEY])))
 
         def fmt(n):
-            from src.parglare_formatter.document_model import text
+            from parglare_formatter.document_model import text
             return text("STMT")
 
         doc = compile_doc_expr(expr, {"node": node}, fmt)
@@ -117,7 +116,7 @@ class TestDocListDefaultSeparator:
         call_count = [0]
 
         def fmt(n):
-            from src.parglare_formatter.document_model import text
+            from parglare_formatter.document_model import text
             call_count[0] += 1
             return text(f"S{call_count[0]}")
 
@@ -214,7 +213,7 @@ class TestDocItemOutsideList:
         item_node = NumberLiteral(value=7)
 
         def fmt(n):
-            from src.parglare_formatter.document_model import text
+            from parglare_formatter.document_model import text
             assert n is item_node
             return text("ITEM_FORMATTED")
 

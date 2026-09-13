@@ -1,9 +1,9 @@
 import os
 
-from src.parglare_formatter.examples.mini_lang.ast_nodes import (
+from tests.mini_lang.ast_nodes import (
     Identifier, NumberLiteral, BinaryOp, Call, Assign, ExprStmt, Block, If, For, FuncDef
 )
-from src.parglare_formatter.formatter.formatter import Formatter
+from parglare_formatter.formatter import Formatter, FormatterError
 
 
 def build_sample_ast() -> Block:
@@ -63,6 +63,18 @@ def build_extended_ast() -> Block:
         ),
     ])
 
+class UnknownNode:
+    """Node that INTENTIONALLY does not exist in formatting_rules.dsl used
+    to demonstrate FormatterError message when DSL rule is missing."""
+    pass
+
+
+def demo_missing_rule_error(formatter: Formatter) -> None:
+    try:
+        formatter.format(UnknownNode())
+    except FormatterError as e:
+        print(f"Expected error (missing rule): {e}")
+
 
 def main() -> None:
     dsl_path = os.path.join(os.path.dirname(__file__), "formatting_rules.dsl")
@@ -74,6 +86,10 @@ def main() -> None:
     print()
     print("=== Extended example ===")
     print(formatter.format(build_extended_ast(), width=40))
+
+    print()
+    print("=== Error Demonstration (missing DSL rule) ===")
+    demo_missing_rule_error(formatter)
 
 
 

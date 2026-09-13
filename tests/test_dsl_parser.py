@@ -4,9 +4,9 @@ parglare = pytest.importorskip(
     "parglare", reason="parglare has not been installed - run 'pip install parglare' locally"
 )
 
-from src.parglare_formatter.dsl.grammar import DSL_GRAMMAR
-from src.parglare_formatter.dsl.parser import parse_dsl, build_parser, get_grammar
-from src.parglare_formatter.dsl.ast import (
+from parglare_formatter.dsl.grammar import DSL_GRAMMAR
+from parglare_formatter.dsl.parser import parse_dsl, build_parser, get_grammar
+from parglare_formatter.dsl.ast import (
     RuleFile, RuleDecl, AttrPath,
     DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup, DocAlign,
     DocFormat, DocList, DocItem, DocAttrRef,

@@ -2,12 +2,12 @@ import os
 
 import pytest
 
-from src.parglare_formatter.dsl.ast import (
+from parglare_formatter.dsl.ast import (
     RuleFile, RuleDecl, AttrPath,
     DocConcat, DocText, DocLine, DocFormat, DocList, DocItem, DocAttrRef,
 )
-from src.parglare_formatter.formatter.formatter import Formatter, FormatterError, format_ast
-from src.parglare_formatter.examples.mini_lang.ast_nodes import (
+from parglare_formatter.formatter import Formatter, FormatterError, format_ast
+from tests.mini_lang.ast_nodes import (
     Identifier, NumberLiteral, BinaryOp, Call, Assign, ExprStmt, Block, If, FuncDef, For,
 )
 
@@ -154,8 +154,8 @@ class TestDslFileLoading:
         pytest.importorskip("parglare", reason="parglare nije instaliran - pokreni pip install parglare lokalno")
 
     def _dsl_path(self):
-        import src.parglare_formatter.examples as examples_pkg
-        return os.path.join(os.path.dirname(examples_pkg.__file__), "formatting_rules.dsl")
+        from tests import mini_lang as example_pkg
+        return os.path.join(os.path.dirname(example_pkg.__file__), "formatting_rules.dsl")
 
     def test_from_dsl_file_loads_and_formats(self):
         formatter = Formatter.from_dsl_file(self._dsl_path())
@@ -211,8 +211,8 @@ class TestFullProgramEndToEnd:
         pytest.importorskip("parglare", reason="parglare not installed")
 
     def _dsl_path(self):
-        import src.parglare_formatter.examples as examples_pkg
-        return os.path.join(os.path.dirname(examples_pkg.__file__), "formatting_rules.dsl")
+        from tests import mini_lang as example_pkg
+        return os.path.join(os.path.dirname(example_pkg.__file__), "formatting_rules.dsl")
 
     def _formatter(self):
         return Formatter.from_dsl_file(self._dsl_path())

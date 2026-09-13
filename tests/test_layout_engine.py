@@ -1,9 +1,9 @@
 import pytest
 
-from src.parglare_formatter.document_model import (
+from parglare_formatter.document_model import (
     text, line, softline, concat, nest, group, align, empty, concat_all,
 )
-from src.parglare_formatter.layout_engine import render, pretty, _fits, _contains_hard_line, Mode
+from parglare_formatter.layout_engine import render, pretty, _fits, _contains_hard_line, Mode
 
 
 class TestBasicRendering:
