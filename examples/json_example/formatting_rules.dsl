@@ -1,28 +1,28 @@
-rule Json(value) = format(value);
+rule Json(node) = format(node.value);
 
-rule JsonObject(members) =
+rule JsonObject(node) =
     text("{") ++
-    nest(2, softline() ++ list(members, item, text(",") ++ line())) ++
+    nest(2, softline() ++ list(node.members, item, text(",") ++ line())) ++
     softline() ++
     text("}");
 
-rule JsonMember(key, value) =
-    format(key) ++ text(": ") ++ format(value);
+rule JsonMember(node) =
+    format(node.key) ++ text(": ") ++ format(node.value);
 
-rule JsonArray(values) =
+rule JsonArray(node) =
     text("[") ++
-    nest(2, softline() ++ list(values, item, text(",") ++ line())) ++
+    nest(2, softline() ++ list(node.values, item, text(",") ++ line())) ++
     softline() ++
     text("]");
 
-rule JsonString(value) =
-    text("\"") ++ value ++ text("\"");
+rule JsonString(node) =
+    text("\"") ++ node.value ++ text("\"");
 
-rule JsonNumber(value) =
-    value;
+rule JsonNumber(node) =
+    node.value;
 
-rule JsonBool(value) =
-    value;
+rule JsonBool(node) =
+    node.value;
 
-rule JsonNull() =
+rule JsonNull(node) =
     text("null");
