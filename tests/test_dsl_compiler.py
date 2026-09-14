@@ -2,7 +2,7 @@ import pytest
 
 from parglare_formatter.dsl.ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocEscaped,
 )
 from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError, ITEM_KEY
 from parglare_formatter.layout_engine import render
@@ -37,6 +37,30 @@ class TestPrimitiveDocTerms:
         expr2 = DocConcat(left=DocText(value="abc"), right=DocAlign(body=DocConcat(left=DocLine(), right=DocText(value="y"))))
         doc2 = compile_doc_expr(expr2, {}, _noop_format_node)
         assert render(doc2, width=80) == "abc\n   y"
+
+    def test_doc_lower_on_bool_and_string(self):
+        bindings = {"node": type("N", (), {"flag": True, "name": "AbC"})()}
+        expr1 = DocLower(path=AttrPath(["node", "flag"]))
+        expr2 = DocLower(path=AttrPath(["node", "name"]))
+
+        doc1 = compile_doc_expr(expr1, bindings, lambda n: pytest.fail("format_node called"))
+        doc2 = compile_doc_expr(expr2, bindings, lambda n: pytest.fail("format_node called"))
+
+        assert render(doc1) == "true"
+        assert render(doc2) == "abc"
+
+    def test_doc_upper_on_string(self):
+        bindings = {"node": type("N", (), {"kw": "select"})()}
+        expr = DocUpper(path=AttrPath(["node", "kw"]))
+        doc = compile_doc_expr(expr, bindings, lambda n: pytest.fail("format_node called"))
+        assert render(doc) == "SELECT"
+
+    def test_doc_escaped_on_quotes_and_backslashes(self):
+        bindings = {"node": type("N", (), {"s": "a\"b\\c\n"})()}
+        expr = DocEscaped(path=AttrPath(["node", "s"]))
+        doc = compile_doc_expr(expr, bindings, lambda n: pytest.fail("format_node called"))
+        result = render(doc)
+        assert result == "a\\\"b\\\\c\\n"
 
 
 class TestAttrPathResolution:
