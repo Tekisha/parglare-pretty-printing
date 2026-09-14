@@ -28,7 +28,7 @@ from typing import Any, Callable, Dict
 from ..document_model import Doc, text, line, softline, concat, nest, group, align, empty, concat_all
 from .ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower,
 )
 
 # Callback signature: (node: Any) -> Doc
@@ -150,6 +150,10 @@ def compile_doc_expr(
                 "only inside second argument of list(path, <here>)"
             )
         return format_node(bindings[ITEM_KEY])
+
+    elif isinstance(expr, DocLower):
+        value = _resolve_attr_path(expr.path, bindings)
+        return text(str(value).lower())
 
     elif isinstance(expr, DocAttrRef):
         value = _resolve_attr_path(expr.path, bindings)

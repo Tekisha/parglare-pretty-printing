@@ -89,6 +89,11 @@ class DocItem:
     """'item' - reference to the current element inside a list(...) body."""
     pass
 
+@dataclass
+class DocLower:
+    """lower(AttrPath) - lower-cased text"""
+    path: AttrPath
+
 
 @dataclass
 class DocAttrRef:
@@ -102,7 +107,7 @@ class DocAttrRef:
 
 DocExpr = Union[
     DocConcat, DocText, DocLine, DocSoftline, DocNest,
-    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower
 ]
 
 # ---------------------------------------------------------------------------

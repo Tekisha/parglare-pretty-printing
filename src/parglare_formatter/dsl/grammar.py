@@ -52,6 +52,7 @@ DocTerm: "text" "(" StringLiteral ")"
        | "format" "(" AttrPath ")"
        | "list" "(" path=AttrPath "," body=DocExpr opt_sep=ListSeparator? ")"
        | "item"
+       | "lower" "(" AttrPath ")"
        | AttrPath
        ;
 
