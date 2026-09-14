@@ -22,13 +22,13 @@ parsed as AttrPath in grammar (Phase 2) when used inside format(...)
 DocTerm (e.g., list(node.stmts, item) without format() wrapper). Both
 cases compile to the same: recursive format_node(item_value) call.
 """
-
+import json
 from typing import Any, Callable, Dict
 
 from ..document_model import Doc, text, line, softline, concat, nest, group, align, empty, concat_all
 from .ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocEscaped,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
 )
 
 # Callback signature: (node: Any) -> Doc
@@ -72,12 +72,9 @@ def _resolve_attr_path(path: AttrPath, bindings: Dict[str, Any]) -> Any:
         value = getattr(value, attr)
     return value
 
-def _escape_string(s: str) -> str:
-    return (
-        s.replace("\\", "\\\\")
-         .replace("\"", "\\\"")
-         .replace("\n", "\\n")
-    )
+def _escape_json_string(value: str) -> str:
+    s = json.dumps(value)
+    return s[1:-1]
 
 
 def compile_doc_expr(
@@ -166,10 +163,10 @@ def compile_doc_expr(
         value = _resolve_attr_path(expr.path, bindings)
         return text(str(value).upper())
 
-    elif isinstance(expr, DocEscaped):
+    elif isinstance(expr, DocJsonEscaped):
         value = _resolve_attr_path(expr.path, bindings)
-        s = str(value)
-        return text(_escape_string(s))
+        s = _escape_json_string(str(value))
+        return text(s)
 
     elif isinstance(expr, DocAttrRef):
         value = _resolve_attr_path(expr.path, bindings)

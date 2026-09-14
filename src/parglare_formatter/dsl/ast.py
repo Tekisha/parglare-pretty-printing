@@ -101,7 +101,7 @@ class DocUpper:
 
 
 @dataclass
-class DocEscaped:
+class DocJsonEscaped:
     """escaped(AttrPath) - string literal with escaped quotes
         and backslashes, for JSON/C-style strings."""
     path: AttrPath
@@ -119,7 +119,7 @@ class DocAttrRef:
 
 DocExpr = Union[
     DocConcat, DocText, DocLine, DocSoftline, DocNest,
-    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocEscaped,
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
 ]
 
 # ---------------------------------------------------------------------------

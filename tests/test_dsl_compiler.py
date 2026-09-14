@@ -2,7 +2,7 @@ import pytest
 
 from parglare_formatter.dsl.ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocEscaped,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
 )
 from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError, ITEM_KEY
 from parglare_formatter.layout_engine import render
@@ -57,7 +57,7 @@ class TestPrimitiveDocTerms:
 
     def test_doc_escaped_on_quotes_and_backslashes(self):
         bindings = {"node": type("N", (), {"s": "a\"b\\c\n"})()}
-        expr = DocEscaped(path=AttrPath(["node", "s"]))
+        expr = DocJsonEscaped(path=AttrPath(["node", "s"]))
         doc = compile_doc_expr(expr, bindings, lambda n: pytest.fail("format_node called"))
         result = render(doc)
         assert result == "a\\\"b\\\\c\\n"
