@@ -28,7 +28,7 @@ from typing import Any, Callable, Dict
 from ..document_model import Doc, text, line, softline, concat, nest, group, align, empty, concat_all
 from .ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocEscaped,
 )
 
 # Callback signature: (node: Any) -> Doc
@@ -71,6 +71,13 @@ def _resolve_attr_path(path: AttrPath, bindings: Dict[str, Any]) -> Any:
             )
         value = getattr(value, attr)
     return value
+
+def _escape_string(s: str) -> str:
+    return (
+        s.replace("\\", "\\\\")
+         .replace("\"", "\\\"")
+         .replace("\n", "\\n")
+    )
 
 
 def compile_doc_expr(
@@ -154,6 +161,15 @@ def compile_doc_expr(
     elif isinstance(expr, DocLower):
         value = _resolve_attr_path(expr.path, bindings)
         return text(str(value).lower())
+
+    elif isinstance(expr, DocUpper):
+        value = _resolve_attr_path(expr.path, bindings)
+        return text(str(value).upper())
+
+    elif isinstance(expr, DocEscaped):
+        value = _resolve_attr_path(expr.path, bindings)
+        s = str(value)
+        return text(_escape_string(s))
 
     elif isinstance(expr, DocAttrRef):
         value = _resolve_attr_path(expr.path, bindings)

@@ -94,6 +94,18 @@ class DocLower:
     """lower(AttrPath) - lower-cased text"""
     path: AttrPath
 
+@dataclass
+class DocUpper:
+    """upper(AttrPath) - upper-cased text."""
+    path: AttrPath
+
+
+@dataclass
+class DocEscaped:
+    """escaped(AttrPath) - string literal with escaped quotes
+        and backslashes, for JSON/C-style strings."""
+    path: AttrPath
+
 
 @dataclass
 class DocAttrRef:
@@ -107,7 +119,7 @@ class DocAttrRef:
 
 DocExpr = Union[
     DocConcat, DocText, DocLine, DocSoftline, DocNest,
-    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocEscaped,
 ]
 
 # ---------------------------------------------------------------------------

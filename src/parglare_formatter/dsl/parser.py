@@ -33,7 +33,7 @@ from .grammar import DSL_GRAMMAR
 from .ast import (
     RuleFile, RuleDecl, AttrPath,
     DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup, DocAlign,
-    DocFormat, DocList, DocItem, DocAttrRef, DocLower,
+    DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocEscaped, DocUpper,
 )
 
 def _rule_file_action(context, nodes):
@@ -135,6 +135,14 @@ def _doc_term_lower_action(context, nodes):
     # nodes: ["lower", "(", AttrPath, ")"]
     return DocLower(path=nodes[2])
 
+def _doc_term_upper_action(context, nodes):
+    # DocTerm: "upper" "(" AttrPath ")"
+    return DocUpper(path=nodes[2])
+
+
+def _doc_term_escaped_action(context, nodes):
+    # DocTerm: "escaped" "(" AttrPath ")"
+    return DocEscaped(path=nodes[2])
 
 def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
@@ -179,6 +187,8 @@ actions = {
         _doc_term_list_action,      # "list" "(" AttrPath "," DocExpr ")"
         _doc_term_item_action,      # "item"
         _doc_term_lower_action,     # "lower" "(" AttrPath ")"
+        _doc_term_upper_action,     # "upper" "(" AttrPath ")"
+        _doc_term_escaped_action,   # "escaped" "(" AttrPath ")"
         _doc_term_attrpath_action,  # AttrPath
     ],
     "AttrPath": _attr_path_action,

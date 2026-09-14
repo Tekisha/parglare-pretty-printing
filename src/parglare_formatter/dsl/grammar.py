@@ -53,6 +53,8 @@ DocTerm: "text" "(" StringLiteral ")"
        | "list" "(" path=AttrPath "," body=DocExpr opt_sep=ListSeparator? ")"
        | "item"
        | "lower" "(" AttrPath ")"
+       | "upper" "(" AttrPath ")"
+       | "escaped" "(" AttrPath ")"
        | AttrPath
        ;
 
