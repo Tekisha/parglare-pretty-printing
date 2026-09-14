@@ -22,7 +22,9 @@ from parglare_formatter.formatter import Formatter
 
 def main():
     parser = build_parser()
-    ast = parser.parse('{"x": true, "y": [2, 3]}')
+    ast = parser.parse(
+        '{"x": true, "y": [2, 3], "msg": "He said \\"hello\\"\\nPath: C\\\\temp"}'
+    )
     print(f"AST: {ast}")
 
     rules_path = Path(__file__).parent / "formatting_rules.dsl"

@@ -1,3 +1,6 @@
+import json
+
+
 class Json:
     def __init__(self, value):
         self.value = value
@@ -8,7 +11,7 @@ class Json:
 
 class JsonString:
     def __init__(self, value):
-        self.value = value[1:-1]
+        self.value = json.loads(value)
 
     def __repr__(self):
         return f"JsonString({self.value!r})"

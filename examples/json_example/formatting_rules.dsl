@@ -16,7 +16,7 @@ rule JsonArray(node) =
     text("]");
 
 rule JsonString(node) =
-    text("\"") ++ node.value ++ text("\"");
+    text("\"") ++ escaped(node.value) ++ text("\"");
 
 rule JsonNumber(node) =
     node.value;
