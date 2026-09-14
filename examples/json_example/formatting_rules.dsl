@@ -22,7 +22,7 @@ rule JsonNumber(node) =
     node.value;
 
 rule JsonBool(node) =
-    node.value;
+    lower(node.value);
 
 rule JsonNull(node) =
     text("null");
