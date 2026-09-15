@@ -10,7 +10,7 @@ Term: left=Term op=("*" | "/") right=Factor {left}
     | Factor
     ;
 
-Factor: "(" Expr ")"
+Factor: "(" expr=Expr ")"
       | number=Number
       ;
 
