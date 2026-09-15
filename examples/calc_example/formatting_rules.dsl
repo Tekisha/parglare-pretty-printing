@@ -5,3 +5,5 @@ rule ExprLine(node) = format(node.expr) ++ line();
 rule BinaryOp(node) = format(node.left) ++ text(" ") ++ node.op ++ text(" ") ++ format(node.right);
 
 rule Number(node) = node.value;
+
+rule Paren(node) = text("(") ++ format(node.expr) ++ text(")");

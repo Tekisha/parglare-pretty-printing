@@ -30,3 +30,10 @@ class Calc:
 
     def __repr__(self):
         return f"Calc({self.expressions!r})"
+
+class Paren:
+    def __init__(self, expr):
+        self.expr = expr
+
+    def __repr__(self):
+        return f"ExprLine({self.expr!r})"

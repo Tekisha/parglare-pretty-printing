@@ -2,7 +2,7 @@ from pathlib import Path
 
 from parglare import Grammar, Parser
 
-from .calc_ast import Number, BinaryOp, ExprLine, Calc
+from .calc_ast import Number, BinaryOp, ExprLine, Calc, Paren
 
 
 def _load_grammar_source() -> str:
@@ -31,7 +31,7 @@ actions = {
 
     "Factor": [
         # Factor: "(" Expr ")"
-        lambda ctx, nodes, expr: nodes[1],
+        lambda ctx, nodes, expr: Paren(expr),
         # Factor: number=Number
         lambda ctx, nodes, number: number,
     ],
