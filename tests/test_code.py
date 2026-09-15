@@ -15,21 +15,21 @@ def build_sample_ast() -> Block:
         }
     """
     return Block(stmts=[
-        ExprStmt(expr=Assign(
+        Assign(
             target="x",
             value=BinaryOp(
                 op="+",
                 left=NumberLiteral(value=1),
                 right=BinaryOp(op="*", left=NumberLiteral(value=2), right=NumberLiteral(value=3)),
             ),
-        )),
+        ),
         ExprStmt(expr=Call(callee="print", args=[Identifier(name="x"), NumberLiteral(value=42)])),
-        ExprStmt(expr=If(
+        If(
             cond=BinaryOp(op=">", left=Identifier(name="x"), right=NumberLiteral(value=0)),
             then_branch=Block(stmts=[
-                ExprStmt(expr=Assign(target="y", value=Identifier(name="x"))),
+                Assign(target="y", value=Identifier(name="x")),
             ]),
-        )),
+        ),
     ])
 
 
