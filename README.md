@@ -46,3 +46,69 @@ These two track converge in the Doc Compiler and layout engine:
 - THe layout engine renders the Doc tree to text for a given width, choosing flat vs broken layout for group and softline.
 
 ![High level pipeline](assets/pretty%20printer.png)
+
+## Core Components
+
+Located under `src/parglare_formatter/`:
+
+**Document model (`document_model.py`)**
+- Defines Doc constructors: `Text`, `Line`, `Concat`, `Nest`, `Group`,
+`Align`, `Empty`
+- Provides convenience combinators: `text()`, `line()`, `softline()`, `group()`,
+`nest()`, `align()`, `concat()`, `empty()`
+
+**Layout engine(`layout_engine.py`)**:
+- Implements a Wadler/Leijen style layout algorithm:
+  - Decides whether `Group(doc)` is rendered in a single flat line or broken across
+multiple lines based on remaining width
+  - Interprets `Softline` as either a space(flat layout) or newline(broken layout)
+and applies indentation via `Nest`.
+
+**Formatting DSL grammar and AST**
+- `dsl/grammar.py`: Parglare grammar for the formatting DSL:
+  - `RuleFile`, `RuleDecl` for `rule Name(params) = DocExpr;`
+  - `DocExpr` with ++ concatenation and term forms:
+    - `text("...")`, `line()`, `softline()`, `nest(n,doc)`, `group(doc)`,
+`align(doc)`
+    - `format(path)` for recursive formatting of child nodes
+    - `list(path, body, separator?)`, `item` placeholder, and attribute references (`AttrPath`)
+- `dsl/ast.py`: Dataclasses for DSL AST:
+  - Structural nodes: `DocConcat`, `DocText`, `DocLine`, `DocSoftline`, `DocNest`,
+`DocGroup`, `DocAlign`, `DocFormat`, `DocList`, `DocItem`, `DocAttrRef`.
+  - Transform nodes: `DocLower`, `DocUpper`, `DocJsonEscaped` (JSON style string escaping) 
+  - Rule nodes: `RuleDecl`, `RuleFile`
+- `dsl/parser.py`L Parglare based DSL parser:
+  - Semantic actions map grammar productions to `ast` classes
+  - Public entrypoint: `parse_dsl(source: str) -> RuleFile`
+
+**DSL compiler (`/dsl/compiler.py`)**:
+- Compiles DSL document expressions (`DocExpr`) into concrete Doc trees
+against a bindings environment, typically `{"nodes": ..., "item": ...}`
+- Handles:
+  - `DocFormat(path)`: calls `format_node(target)` to format child AST nodes.
+  - `DocList(path, body, separator)`: iterates over a list attribute, applies `body` with `item` binding, inserts separators.
+  - `DocLower` / `DocUpper`: transforms `str(value).lower()` / `.upper()`.
+  - `DocJsonEscaped`: uses JSON escaping for string values (JSON literal body
+without outer quotes).
+  - `DocAttrRef`: inserts primitive values via `text(str(value))`
+
+**Formatter API (`formatter.py`)**:
+- Main user-facing entrypoint:
+  ```python
+   from parglare_formatter.formatter import Formatter
+
+   formatter = Formatter.from_dsl_file("formatting_rules.dsl")
+   formatted = formatter.format(ast_root, width=80)
+  ```
+- Responsibilities:
+  - Loads and stores a `RuleFile` (parsed DSL).
+  - Selects a rule by Python class name: e.g. 'JsonObject' -> `rule JsonObject(node) = ...`.
+  - Invokes the DSL compiler to produce a Doc tree.
+  - Runs the layout engine to obtain the final string.
+
+## Example languages
+
+Located under `examples/`:
+
+**JSON example (`json_example/`)
+- 
