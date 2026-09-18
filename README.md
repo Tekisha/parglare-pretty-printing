@@ -178,3 +178,38 @@ Formatter matches rules by `type(node).__name__`
  - `format(path)`: recursively format `node` or child attributes
  - `list(path, item, separator)`: Iterator over a list attribute, formatting each `item` with optional separator
  - `lower(value)`, `upper(value)`, `escaped(value)`: string transformations
+
+**Tests and how to run**
+From the project root:
+```bash
+# Install in editable mode
+python -m pip install -e .
+
+# Run all tests
+pytest
+
+# Run JSON example
+python examples/json_example/test_code.py
+
+# Run calc example
+python examples/calc_example/test_code.py
+```
+
+The tests cover:
+- Document model constructors and basic combinators
+- Layout behavior for `group`, `nest`, `softline`.
+- DSL parsing and compilation
+- Formatter behavior and integration with JSON and calc example language
+
+**Limitations and future work**
+
+Current limitations:
+- Comments and original formatting are not preserved (one-way AST to text transformation)
+- Formatting is driven by a single rule per node type (selected by class name)
+- No format-preserving or incremental editing yet
+
+Planned or possible extensions:
+- Comment preservation and round-trip formatting
+- Format-preserving transformations
+- Rule inheritance / overrides and configuration profiles
+- LSP integration for on the fly formatting from the same grammar and DSL

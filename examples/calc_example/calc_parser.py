@@ -2,7 +2,7 @@ from pathlib import Path
 
 from parglare import Grammar, Parser
 
-from .calc_ast import Number, BinaryOp, ExprLine, Calc, Paren
+from calc_ast import Number, BinaryOp, ExprLine, Calc, Paren
 
 
 def _load_grammar_source() -> str:
