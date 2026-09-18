@@ -146,4 +146,35 @@ rule BinaryOp(node) =
 ```
 - `test_code.py`: Demo script
 
-##
+## DSL overview
+**Rule declarations**
+
+Each rule binds a node type to a document expression:
+```text
+rule BinaryOp(node) =
+    format(node.left) ++ text(" ") ++ node.op ++ softline() ++ format(node.right);
+
+rule JsonArray(node) =
+    group(
+        text("[") ++
+        nest(2,
+            softline() ++
+            list(node.values, item, text(",") ++ softline())
+        ) ++
+        softline() ++
+        text("]")
+    );
+```
+Formatter matches rules by `type(node).__name__`
+
+**Core combinators**:
+ - `text(str)`: literal text
+ - `line()`: hard line break
+ - `softline()`: space if the group fits on one line, newline otherwise
+ - `concat`/`++`: concatenation
+ - `nest(indent, doc)`: indent nested content by indent spaces
+ - `group(doc)`: try flat layout first, fall back to broken layout if width exceeded
+ - `align(doc)`: align continuation lines with the first line
+ - `format(path)`: recursively format `node` or child attributes
+ - `list(path, item, separator)`: Iterator over a list attribute, formatting each `item` with optional separator
+ - `lower(value)`, `upper(value)`, `escaped(value)`: string transformations
