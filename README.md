@@ -111,4 +111,39 @@ without outer quotes).
 Located under `examples/`:
 
 **JSON example (`json_example/`)
-- 
+- `json_lang_grammar.dsl`: Parlgare grammar for a JSON subset (objects, arrays, strings, numbers, 
+booleans, null)
+- `json_lang_ast.py`: AST classes
+  - `Json`, `JsonObject`, `JsonArray`, `JsonString`, `JsonNumber`, `JsonBool`,
+`JsonNull`, `JsonMember`
+  - `JsonString` can decode JSON string literals to Python strings.
+  - `JsonNumber` may normalize numeric representations
+- `json_lang_parser.py`: Constructs the Parlgare parser and AST via semantic actions.
+- `formatting_rules.dsl`: formatting rules, e.g:
+```text
+rule JsonObject(node) =
+    text("{") ++
+    nest(2,
+        softline() ++
+        list(node.members, item, text(",") ++ softline())
+    ) ++
+    softline() ++
+    text("}");
+```
+- `test_code.py`: Demo script
+
+**Calculator example (`calc_example/`)**
+- `calc_grammar.dsl`: Parglare grammar with precedence rules
+- `calc_ast.py`: AST classes
+  - `Calc`, `ExprLine`, `BinaryOp`, `Number`, optionally `Paren` to preserve parentheses
+- `calc_parser.py`: Parglare parser building the AST
+- `formatting_rules.py`: formatting rules such as:
+```text
+rule BinaryOp(node) =
+    group(
+        format(node.left) ++ text(" ") ++ node.op ++ softline() ++ format(node.right)
+    );
+```
+- `test_code.py`: Demo script
+
+##
