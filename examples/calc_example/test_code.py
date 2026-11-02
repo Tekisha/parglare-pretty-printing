@@ -1,8 +1,12 @@
 from pathlib import Path
 
-from calc_parser import parse_calc
+from examples.calc_example.calc_parser import parse_calc
 from parglare_formatter.formatter import Formatter
 
+"""
+    Run from project root:
+        python -m examples.calc_example.test_code
+"""
 
 def main():
     source = "1 + 2 * 3\n10 - 5\n"

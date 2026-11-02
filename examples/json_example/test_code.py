@@ -8,15 +8,13 @@ Entry point that combines:
   - formatting_rules.dsl   (DSL rules for pretty-printing)
   - formatter.py           (Formatter from the parglare_formatter package)
 
-Run:
-    python -m src.parglare_formatter.examples.json_example.test_code
-or, if the file is in the same directory:
-    python test_code.py
+Run from root:
+    python -m examples.json_example.test_code
 """
 
 from pathlib import Path
 
-from json_lang_parser import build_parser
+from examples.json_example.json_lang_parser import build_parser
 from parglare_formatter.formatter import Formatter
 
 
