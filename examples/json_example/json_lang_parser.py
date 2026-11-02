@@ -3,7 +3,7 @@ from pathlib import Path
 from parglare import Grammar, Parser
 from parglare.actions import pass_single
 
-from json_lang_ast import (
+from .json_lang_ast import (
     Json,
     JsonString,
     JsonNumber,
