@@ -18,7 +18,7 @@ the AST STRUCTURE.
 
 Note on class names: formatter (Phase 7/8) selects DSL rules by
 the Python class name of the node (e.g., a `BinaryOp` node looks
-for `rule BinaryOp(node) = ...` in the .dsl file) so class names
+for `rule BinaryOp = ...` in the .dsl file) so class names
 here MUST exactly match the `rule` declaration names in
 formatting_rules.dsl.
 """
