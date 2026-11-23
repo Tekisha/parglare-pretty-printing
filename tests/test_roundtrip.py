@@ -10,9 +10,9 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 WIDTHS = [1, 5, 10, 40, 80, 200]
 
 
-def _formatter(name: str) -> Formatter:
+def _formatter(name: str, grammar=None) -> Formatter:
     src = (FIXTURES_DIR / name).read_text(encoding="utf-8")
-    return Formatter.from_dsl_source(src)
+    return Formatter.from_dsl_source(src, grammar=grammar)
 
 
 def assert_roundtrip(parse, formatter, source, width):
@@ -41,15 +41,24 @@ JSON_CASES = [
     '[[1], [2, [3]]]',
 ]
 
+@pytest.fixture(scope="module")
+def json_parser():
+    return build_parser()
+
 
 @pytest.fixture(scope="module")
-def json_parse():
-    return build_parser().parse
+def json_parse(json_parser):
+    return json_parser.parse
 
 
-@pytest.fixture(scope="module")
-def json_formatter():
-    return _formatter("json_formatting_rules.dsl")
+@pytest.fixture(scope="module", params=["explicit", "derived"])
+def json_formatter(request, json_parser):
+    if request.param == "explicit":
+        return _formatter("json_formatting_rules.dsl")
+    return _formatter(
+        "json_formatting_rules_derived.dsl",
+        grammar=json_parser.grammar,
+    )
 
 
 @pytest.mark.parametrize("width", WIDTHS)
@@ -57,6 +66,15 @@ def json_formatter():
 def test_json_roundtrip(json_parse, json_formatter, source, width):
     assert_roundtrip(json_parse, json_formatter, source, width)
 
+@pytest.mark.parametrize("width", WIDTHS)
+@pytest.mark.parametrize("source", JSON_CASES)
+def test_json_derived_equals_explicit(json_parser, source, width):
+    ast = json_parser.parse(source)
+    explicit = _formatter("json_formatting_rules.dsl")
+    derived = _formatter(
+        "json_formatting_rules_derived.dsl", grammar=json_parser.grammar
+    )
+    assert derived.format(ast, width=width) == explicit.format(ast, width=width)
 
 # ---------------- Calc ----------------
 
