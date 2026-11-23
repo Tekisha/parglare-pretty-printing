@@ -2,7 +2,7 @@ rule Json = format(node.value);
 
 rule JsonObject =
     text("{") ++
-    nest(2, softline() ++ list(node.members, item, text(",") ++ line())) ++
+    nest(2, softline() ++ list(node.members, item)) ++
     softline() ++
     text("}");
 
@@ -11,7 +11,7 @@ rule JsonMember =
 
 rule JsonArray =
     text("[") ++
-    nest(2, softline() ++ list(node.values, item, text(",") ++ line())) ++
+    nest(2, softline() ++ list(node.values, item)) ++
     softline() ++
     text("]");
 
