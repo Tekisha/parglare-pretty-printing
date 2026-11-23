@@ -23,6 +23,7 @@ from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
 from parglare_formatter.dsl.parser import parse_dsl
 from parglare_formatter.document_model import Doc, text
 from parglare_formatter.layout_engine import render
+from parglare_formatter.grammar_introspection import extract_list_separators
 
 
 class FormatterError(Exception):
@@ -42,20 +43,20 @@ class Formatter:
     """
     _PRIMITIVE_TYPES = (str, int, float, bool)
 
-    def __init__(self, rule_file: RuleFile):
+    def __init__(self, rule_file: RuleFile, grammar=None):
         self.rule_file = rule_file
+        self.list_separators = (
+            extract_list_separators(grammar) if grammar is not None else {}
+        )
 
     @classmethod
-    def from_dsl_source(cls, source: str) -> "Formatter":
-        """Convenience constructor: parse DSL source and create Formatter."""
-        return cls(parse_dsl(source))
+    def from_dsl_source(cls, source: str, grammar=None) -> "Formatter":
+        return cls(parse_dsl(source), grammar=grammar)
 
     @classmethod
-    def from_dsl_file(cls, path: str) -> "Formatter":
-        """Load .dsl file from disk and create Formatter."""
+    def from_dsl_file(cls, path: str, grammar=None) -> "Formatter":
         with open(path, "r", encoding="utf-8") as f:
-            source = f.read()
-        return cls.from_dsl_source(source)
+            return cls.from_dsl_source(f.read(), grammar=grammar)
 
     def _rule_name_for(self, node: Any) -> str:
         """Return DSL rule name for given AST node - by convention,
@@ -81,7 +82,10 @@ class Formatter:
         bindings: Dict[str, Any] = {IMPLICIT_PARAM: node}
 
         try:
-            return compile_doc_expr(rule.body, bindings, self.format_node)
+            return compile_doc_expr(
+                rule.body, bindings, self.format_node,
+                list_separators=self.list_separators,
+            )
         except CompileError as e:
             raise FormatterError(
                 f"Error compiling rule {rule_name!r} for node {node!r}: {e}"
