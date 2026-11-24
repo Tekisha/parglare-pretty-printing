@@ -53,6 +53,7 @@ DocTerm: "text" "(" StringLiteral ")"
        | "lower" "(" AttrPath ")"
        | "upper" "(" AttrPath ")"
        | "escaped" "(" AttrPath ")"
+       | "optional" "(" AttrPath "," DocExpr ")"
        | AttrPath
        ;
 

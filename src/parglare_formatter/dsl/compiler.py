@@ -28,7 +28,7 @@ from typing import Any, Callable, Dict
 from ..document_model import Doc, text, line, softline, concat, nest, group, align, empty, concat_all
 from .ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional,
 )
 
 # Callback signature: (node: Any) -> Doc
@@ -131,6 +131,19 @@ def compile_doc_expr(
     elif isinstance(expr, DocAlign):
         inner = compile_doc_expr(expr.body, bindings, format_node, list_separators)
         return align(inner)
+
+    elif isinstance(expr, DocOptional):
+        value = _resolve_attr_path(expr.path, bindings)
+
+        if value is None:
+            return empty()
+
+        return compile_doc_expr(
+            expr.body,
+            bindings,
+            format_node,
+            list_separators,
+        )
 
     elif isinstance(expr, DocFormat):
         target_node = _resolve_attr_path(expr.path, bindings)

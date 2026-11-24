@@ -114,13 +114,19 @@ class DocAttrRef:
     whose value is inserted directly as text (e.g. for primitive fields)."""
     path: AttrPath
 
+@dataclass
+class DocOptional:
+    """optional(AttrPath, DocExpr) - emit body unless the value is None."""
+    path: AttrPath
+    body: "DocExpr"
+
 
 # DocExpr = "DocConcat | DocText | DocLine | DocSoftline | DocNest | " \
-#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef"
+#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef | DocOptional"
 
 DocExpr = Union[
     DocConcat, DocText, DocLine, DocSoftline, DocNest,
-    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional,
 ]
 
 # ---------------------------------------------------------------------------
