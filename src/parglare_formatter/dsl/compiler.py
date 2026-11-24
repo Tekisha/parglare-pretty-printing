@@ -60,7 +60,7 @@ def _resolve_attr_path(path: AttrPath, bindings: Dict[str, Any]) -> Any:
     if first not in bindings:
         raise CompileError(
             f"Unknown parame {first!r} in AttrPath {str(path)!r}. "
-            f"Available params: {list(bindings)}"
+            f"Available bindings: {list(bindings)}"
         )
     value = bindings[first]
     for attr in rest:

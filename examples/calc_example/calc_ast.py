@@ -1,4 +1,6 @@
-class Number:
+from examples.ast_base import Node
+
+class Number(Node):
     def __init__(self, value):
         self.value = int(value)
 
@@ -6,7 +8,7 @@ class Number:
         return f"Number({self.value!r})"
 
 
-class BinaryOp:
+class BinaryOp(Node):
     def __init__(self, left, op, right):
         self.left = left
         self.op = op  # "+", "-", "*", "/"
@@ -16,7 +18,7 @@ class BinaryOp:
         return f"BinaryOp({self.left!r}, {self.op!r}, {self.right!r})"
 
 
-class ExprLine:
+class ExprLine(Node):
     def __init__(self, expr):
         self.expr = expr
 
@@ -24,16 +26,16 @@ class ExprLine:
         return f"ExprLine({self.expr!r})"
 
 
-class Calc:
+class Calc(Node):
     def __init__(self, expressions):
         self.expressions = expressions or []
 
     def __repr__(self):
         return f"Calc({self.expressions!r})"
 
-class Paren:
+class Paren(Node):
     def __init__(self, expr):
         self.expr = expr
 
     def __repr__(self):
-        return f"ExprLine({self.expr!r})"
+        return f"Paren({self.expr!r})"

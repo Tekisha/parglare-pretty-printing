@@ -12,15 +12,13 @@ RULE SELECTION by Python class name of the concrete AST node. This is the
 `format_node` callback that dsl_compiler.py calls recursively for
 `format(...)`, `list(...)`, and bare `item`.
 
-Convention: DSL rule `rule BinaryOp(node) = ...` applies to EVERY AST node
-whose Python class is `BinaryOp` (type(node).__name__). The first parameter
-name of the rule (typically "node") becomes the key in the bindings map
-to which the node is bound.
+Convention: DSL rule `rule BinaryOp = ...` applies to EVERY AST node
+whose Python class is `BinaryOp` (type(node).__name__).
 """
 
 from typing import Any, Dict, Optional
 
-from parglare_formatter.dsl.ast import RuleFile
+from parglare_formatter.dsl.ast import RuleFile, IMPLICIT_PARAM
 from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
 from parglare_formatter.dsl.parser import parse_dsl
 from parglare_formatter.document_model import Doc, text
@@ -28,8 +26,7 @@ from parglare_formatter.layout_engine import render
 
 
 class FormatterError(Exception):
-    """Raised when formatting fails e.g., no DSL rule for a node type,
-    or a rule has wrong number of parameters."""
+    """Raised when formatting fails e.g., no DSL rule for a node type"""
     pass
 
 
@@ -78,17 +75,10 @@ class Formatter:
 
             raise FormatterError(
                 f"No DSL rule for node type {rule_name!r}. "
-                f"Define 'rule {rule_name}(node) = ...;' in .dsl file."
+                f"Define 'rule {rule_name} = ...;' in .dsl file."
             )
         rule = self.rule_file.get_rule(rule_name)
-
-        if len(rule.params) != 1:
-            raise FormatterError(
-                f"Rule {rule_name!r} must have exactly ONE parameter "
-                f"(convention: 'node'), but has {len(rule.params)}: {rule.params}"
-            )
-        param_name = rule.params[0]
-        bindings: Dict[str, Any] = {param_name: node}
+        bindings: Dict[str, Any] = {IMPLICIT_PARAM: node}
 
         try:
             return compile_doc_expr(rule.body, bindings, self.format_node)
