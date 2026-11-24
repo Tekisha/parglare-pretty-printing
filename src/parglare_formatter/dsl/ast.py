@@ -14,6 +14,7 @@ document_model.py.
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict
 
+IMPLICIT_PARAM = "node"
 
 @dataclass
 class AttrPath:
@@ -128,9 +129,8 @@ DocExpr = Union[
 
 @dataclass
 class RuleDecl:
-    """rule name(params) = body ;"""
+    """rule name = body ;"""
     name: str
-    params: List[str] = field(default_factory=list)
     body: Optional[object] = None  # DocExpr
 
 

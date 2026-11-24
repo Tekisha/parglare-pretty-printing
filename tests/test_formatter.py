@@ -18,9 +18,9 @@ def AP(*parts):
 
 def _make_minimal_rules():
     return RuleFile(rules=[
-        RuleDecl(name="Identifier", params=["node"], body=DocAttrRef(path=AP("node", "name"))),
-        RuleDecl(name="NumberLiteral", params=["node"], body=DocAttrRef(path=AP("node", "value"))),
-        RuleDecl(name="BinaryOp", params=["node"], body=DocConcat(
+        RuleDecl(name="Identifier", body=DocAttrRef(path=AP("node", "name"))),
+        RuleDecl(name="NumberLiteral", body=DocAttrRef(path=AP("node", "value"))),
+        RuleDecl(name="BinaryOp", body=DocConcat(
             left=DocConcat(
                 left=DocConcat(left=DocFormat(path=AP("node", "left")), right=DocText(value=" ")),
                 right=DocConcat(left=DocAttrRef(path=AP("node", "op")), right=DocText(value=" ")),
@@ -71,28 +71,10 @@ class TestFormatterMissingRule:
             formatter.format(Call(callee="f", args=[]))
 
 
-class TestFormatterParamValidation:
-    def test_rule_with_wrong_param_count_raises(self):
-        rules = RuleFile(rules=[
-            RuleDecl(name="Identifier", params=["node", "extra"], body=DocText(value="x")),
-        ])
-        formatter = Formatter(rules)
-        with pytest.raises(FormatterError, match="Rule 'Identifier'"):
-            formatter.format(Identifier(name="x"))
-
-    def test_rule_with_zero_params_raises(self):
-        rules = RuleFile(rules=[
-            RuleDecl(name="Identifier", params=[], body=DocText(value="x")),
-        ])
-        formatter = Formatter(rules)
-        with pytest.raises(FormatterError, match="Rule 'Identifier'"):
-            formatter.format(Identifier(name="x"))
-
-
 class TestFormatterCompileErrorWrapping:
     def test_compile_error_is_wrapped_as_formatter_error(self):
         rules = RuleFile(rules=[
-            RuleDecl(name="Identifier", params=["node"], body=DocAttrRef(path=AP("node", "does_not_exist"))),
+            RuleDecl(name="Identifier", body=DocAttrRef(path=AP("node", "does_not_exist"))),
         ])
         formatter = Formatter(rules)
         with pytest.raises(FormatterError, match="Error compiling rule"):
@@ -102,16 +84,16 @@ class TestFormatterCompileErrorWrapping:
 class TestFormatterWithListAndBlocks:
     def _make_block_rules(self):
         return RuleFile(rules=[
-            RuleDecl(name="Identifier", params=["node"], body=DocAttrRef(path=AP("node", "name"))),
-            RuleDecl(name="NumberLiteral", params=["node"], body=DocAttrRef(path=AP("node", "value"))),
-            RuleDecl(name="Assign", params=["node"], body=DocConcat(
+            RuleDecl(name="Identifier", body=DocAttrRef(path=AP("node", "name"))),
+            RuleDecl(name="NumberLiteral", body=DocAttrRef(path=AP("node", "value"))),
+            RuleDecl(name="Assign", body=DocConcat(
                 left=DocConcat(
                     left=DocConcat(left=DocAttrRef(path=AP("node", "target")), right=DocText(value=" = ")),
                     right=DocFormat(path=AP("node", "value")),
                 ),
                 right=DocText(value=";"),
             )),
-            RuleDecl(name="Block", params=["node"], body=DocConcat(
+            RuleDecl(name="Block", body=DocConcat(
                 left=DocConcat(
                     left=DocText(value="{"),
                     right=DocConcat(
@@ -179,7 +161,7 @@ class TestDslFileLoading:
 class TestFormatterPrimitiveFallback:
     def test_bare_string_item_uses_fallback(self):
         rules = RuleFile(rules=[
-            RuleDecl(name="FuncDef", params=["node"], body=DocList(
+            RuleDecl(name="FuncDef", body=DocList(
                 path=AP("node", "params"), body=DocItem(), separator=DocText(value=", "),
             )),
         ])
@@ -193,7 +175,7 @@ class TestFormatterPrimitiveFallback:
                 self.stmts = stmts
 
         rules = RuleFile(rules=[
-            RuleDecl(name="FakeIntListNode", params=["node"], body=DocList(
+            RuleDecl(name="FakeIntListNode", body=DocList(
                 path=AP("node", "stmts"), body=DocItem(), separator=DocText(value=","),
             )),
         ])

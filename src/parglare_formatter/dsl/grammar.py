@@ -3,10 +3,10 @@ DSL grammar for declaratively defining formatting rules.
 
 DSL syntax (example):
 
-    rule binary_op(node) =
+    rule binary_op =
         format(node.left) ++ text(" + ") ++ format(node.right);
 
-    rule block(node) =
+    rule block =
         text("{") ++
         nest(2, line() ++ list(node.stmts, format(item))) ++
         line() ++ text("}");
@@ -27,7 +27,7 @@ Notes on grammar structure (see the project's introductory chapter):
     modeled via a dedicated `AttrPath: Ident ("." Ident)*` rule so the
     DSL can reference nested AST node fields without special syntax
     for it.
-  - Named matches (name=, params=, body=, left=, right=) are used
+  - Named matches (name=, body=, left=, right=) are used
     wherever they reduce the need for manually writing actions - see
     dsl_parser.py.
 """
@@ -35,11 +35,9 @@ Notes on grammar structure (see the project's introductory chapter):
 DSL_GRAMMAR = r"""
 RuleFile: RuleDecl+ ;
 
-RuleDecl: "rule" name=Ident "(" params=ParamList? ")" "=" body=DocExpr ";" ;
+RuleDecl: "rule" name=Ident "=" body=DocExpr ";" ;
 
-ParamList: Ident ("," Ident)* ;
-
-DocExpr: left=DocExpr "++" right=DocTerm  {left}
+DocExpr: left=DocExpr "++" right=DocTerm
        | DocTerm
        ;
 
