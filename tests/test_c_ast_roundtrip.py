@@ -29,6 +29,11 @@ C_CASES = [
         return 2;
     }
     """,
+    "void noop(void) {}",
+    "void noop(void) { return; }",
+    "int main() { return 0; }",
+    "void noop() {}",
+    "void noop() { return; }",
 ]
 
 
@@ -100,3 +105,26 @@ def test_signature_detects_changed_function_name():
     second = parse_c("int second(void){return 0;}")
 
     assert ast_signature(first) != ast_signature(second)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "void noop(void) {}",
+            "void noop(void) {\n}\n",
+        ),
+        (
+            "void noop(void) { return; }",
+            "void noop(void) {\n    return;\n}\n",
+        ),
+        (
+            "int main() { return 0; }",
+            "int main() {\n    return 0;\n}\n",
+        ),
+    ],
+)
+def test_optional_c_construct_layout(c_formatter, source, expected):
+    ast = parse_c(source)
+
+    assert c_formatter.format(ast, width=80) == expected
