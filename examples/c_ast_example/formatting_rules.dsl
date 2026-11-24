@@ -12,7 +12,7 @@ rule FuncDecl =
     text(" ") ++
     node.type.declname ++
     text("(") ++
-    format(node.args) ++
+    optional(node.args, format(node.args)) ++
     text(")");
 
 rule ParamList =
@@ -29,15 +29,23 @@ rule IdentifierType =
 
 rule Compound =
     text("{") ++
-    nest(
-        4,
-        line() ++ list(node.block_items, item, line())
+    optional(
+        node.block_items,
+        nest(
+            4,
+            line() ++ list(node.block_items, item, line())
+        )
     ) ++
     line() ++
     text("}");
 
 rule Return =
-    text("return ") ++ format(node.expr) ++ text(";");
+    text("return") ++
+    optional(
+        node.expr,
+        text(" ") ++ format(node.expr)
+    ) ++
+    text(";");
 
 rule Constant =
     node.value;
