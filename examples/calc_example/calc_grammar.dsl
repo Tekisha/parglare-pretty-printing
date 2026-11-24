@@ -2,11 +2,11 @@ Calc: expressions=ExprLine+ ;
 
 ExprLine: expr=Expr EOL ;
 
-Expr: left=Expr op=("+" | "-") right=Term {left}
+Expr: left=Expr op=("+" | "-") EOL? right=Term {left}
     | Term
     ;
 
-Term: left=Term op=("*" | "/") right=Factor {left}
+Term: left=Term op=("*" | "/") EOL? right=Factor {left}
     | Factor
     ;
 

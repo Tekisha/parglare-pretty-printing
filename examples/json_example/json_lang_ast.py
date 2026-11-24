@@ -1,7 +1,7 @@
 import json
+from examples.ast_base import Node
 
-
-class Json:
+class Json(Node):
     def __init__(self, value):
         self.value = value
 
@@ -9,7 +9,7 @@ class Json:
         return f"Json({self.value!r})"
 
 
-class JsonString:
+class JsonString(Node):
     def __init__(self, value):
         self.value = json.loads(value)
 
@@ -17,7 +17,7 @@ class JsonString:
         return f"JsonString({self.value!r})"
 
 
-class JsonNumber:
+class JsonNumber(Node):
     def __init__(self, value):
         self.value = float(value)
 
@@ -25,7 +25,7 @@ class JsonNumber:
         return f"JsonNumber({self.value!r})"
 
 
-class JsonBool:
+class JsonBool(Node):
     def __init__(self, value):
         self.value = value
 
@@ -33,12 +33,12 @@ class JsonBool:
         return f"JsonBool({self.value!r})"
 
 
-class JsonNull:
+class JsonNull(Node):
     def __repr__(self):
         return "JsonNull()"
 
 
-class JsonObject:
+class JsonObject(Node):
     def __init__(self, members):
         self.members = members or []
 
@@ -46,7 +46,7 @@ class JsonObject:
         return f"JsonObject({self.members!r})"
 
 
-class JsonMember:
+class JsonMember(Node):
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -55,7 +55,7 @@ class JsonMember:
         return f"JsonMember({self.key!r}, {self.value!r})"
 
 
-class JsonArray:
+class JsonArray(Node):
     def __init__(self, values):
         self.values = values or []
 

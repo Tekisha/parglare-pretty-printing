@@ -60,7 +60,7 @@ def _resolve_attr_path(path: AttrPath, bindings: Dict[str, Any]) -> Any:
     if first not in bindings:
         raise CompileError(
             f"Unknown parame {first!r} in AttrPath {str(path)!r}. "
-            f"Available params: {list(bindings)}"
+            f"Available bindings: {list(bindings)}"
         )
     value = bindings[first]
     for attr in rest:
@@ -76,11 +76,27 @@ def _escape_json_string(value: str) -> str:
     s = json.dumps(value)
     return s[1:-1]
 
+def _infer_separator(path, bindings, list_separators):
+    """Separator literal for list(path, ...) from the grammar, or None."""
+    if not list_separators or len(path.parts) < 2:
+        return None
+    *owner_parts, attr = path.parts
+    first, *rest = owner_parts
+    if first not in bindings:
+        return None
+    owner = bindings[first]
+    for part in rest:
+        owner = getattr(owner, part, None)
+        if owner is None:
+            return None
+    return list_separators.get((type(owner).__name__, attr))
+
 
 def compile_doc_expr(
     expr: Any,
     bindings: Dict[str, Any],
     format_node: FormatCallback,
+    list_separators=None,
 ) -> Doc:
     """
     Recursively compiles DocExpr AST node (expr) into Doc, using:
@@ -100,20 +116,20 @@ def compile_doc_expr(
         return softline()
 
     elif isinstance(expr, DocConcat):
-        left_doc = compile_doc_expr(expr.left, bindings, format_node)
-        right_doc = compile_doc_expr(expr.right, bindings, format_node)
+        left_doc = compile_doc_expr(expr.left, bindings, format_node, list_separators)
+        right_doc = compile_doc_expr(expr.right, bindings, format_node, list_separators)
         return concat(left_doc, right_doc)
 
     elif isinstance(expr, DocNest):
-        inner = compile_doc_expr(expr.body, bindings, format_node)
+        inner = compile_doc_expr(expr.body, bindings, format_node, list_separators)
         return nest(expr.indent, inner)
 
     elif isinstance(expr, DocGroup):
-        inner = compile_doc_expr(expr.body, bindings, format_node)
+        inner = compile_doc_expr(expr.body, bindings, format_node, list_separators)
         return group(inner)
 
     elif isinstance(expr, DocAlign):
-        inner = compile_doc_expr(expr.body, bindings, format_node)
+        inner = compile_doc_expr(expr.body, bindings, format_node, list_separators)
         return align(inner)
 
     elif isinstance(expr, DocFormat):
@@ -130,17 +146,23 @@ def compile_doc_expr(
                 f"{type(collection).__name__!r}"
             )
 
-        separator_expr = expr.separator if expr.separator is not None else DocLine()
-
         docs = []
         for item in items:
             item_bindings = dict(bindings)
             item_bindings[ITEM_KEY] = item
-            docs.append(compile_doc_expr(expr.body, item_bindings, format_node))
+            docs.append(compile_doc_expr(expr.body, item_bindings, format_node, list_separators))
         if not docs:
             return empty()
 
-        separator_doc = compile_doc_expr(separator_expr, bindings, format_node)
+        if expr.separator is not None:
+            separator_doc = compile_doc_expr(expr.separator, bindings, format_node, list_separators)
+        else:
+            literal = _infer_separator(expr.path, bindings, list_separators)
+            separator_doc = (
+                concat(text(literal), softline())
+                if literal is not None
+                else line()
+            )
 
         result = docs[0]
         for d in docs[1:]:

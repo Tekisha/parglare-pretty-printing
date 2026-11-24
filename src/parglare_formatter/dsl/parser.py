@@ -14,14 +14,14 @@ KEY RULES (see the project's introductory chapter on the parglare API):
   - Grammar.from_string(...) produces a Grammar instance; Parser(grammar,
     actions=actions) receives the actions dict directly via the
     constructor.
-  - Named matches (name=, params=, body=, left=, right=) in the grammar
+  - Named matches (name=, body=, left=, right=) in the grammar
     AUTOMATICALLY generate the built-in 'obj' action if we don't define
     a custom action for that rule - but here we WRITE custom actions
     everywhere we need a typed dsl_ast class (e.g. RuleDecl instead of
     a generated anonymous class), which is the recommended approach
     when a custom dataclass hierarchy is needed. Named matches can still
     be received as extra keyword arguments to the action (e.g.
-    action(context, nodes, name=..., params=..., body=...)) - we use
+    action(context, nodes, name=..., body=...)) - we use
     that form wherever it shortens the code.
 """
 import re
@@ -43,29 +43,9 @@ def _rule_file_action(context, nodes):
     return RuleFile(rules=list(nodes[0]))
 
 
-def _rule_decl_action(context, nodes, name, params, body):
-    # RuleDecl: "rule" name=Ident "(" params=ParamList? ")" "=" body=DocExpr ";" ;
-    # named-match kwargs: name (str), params (list[str] or None), body (DocExpr)
-    return RuleDecl(name=name, params=params or [], body=body)
-
-
-def _param_list_action(context, nodes):
-    # ParamList: Ident ("," Ident)* ;
-    # nodes[0] is the first Ident (str), nodes[1] is a list of the
-    # additional Idents collected from the ("," Ident)* repetition -
-    # parglare returns a list of (",", Ident) pairs per iteration, or a
-    # list of Ident values depending on the anonymous rule; here we
-    # explicitly filter out only the Ident values.
-    first = nodes[0]
-    rest_group = nodes[1] if len(nodes) > 1 else []
-    rest = []
-    for item in rest_group:
-        # svaka iteracija (","  Ident) - Parglare vraca listu [",", Ident]
-        if isinstance(item, list):
-            rest.append(item[1])
-        else:
-            rest.append(item)
-    return [first] + rest
+def _rule_decl_action(context, nodes, name, body):
+    # RuleDecl: "rule" name=Ident "=" body=DocExpr ";" ;
+    return RuleDecl(name=name, body=body)
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +151,6 @@ def _attr_path_action(context, nodes):
 actions = {
     "RuleFile": _rule_file_action,
     "RuleDecl": _rule_decl_action,
-    "ParamList": _param_list_action,
     "DocExpr": [
         _doc_expr_concat_action,   # DocExpr "++" DocTerm {left}
         _doc_expr_single_action,   # DocTerm

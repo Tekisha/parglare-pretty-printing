@@ -12,24 +12,22 @@ RULE SELECTION by Python class name of the concrete AST node. This is the
 `format_node` callback that dsl_compiler.py calls recursively for
 `format(...)`, `list(...)`, and bare `item`.
 
-Convention: DSL rule `rule BinaryOp(node) = ...` applies to EVERY AST node
-whose Python class is `BinaryOp` (type(node).__name__). The first parameter
-name of the rule (typically "node") becomes the key in the bindings map
-to which the node is bound.
+Convention: DSL rule `rule BinaryOp = ...` applies to EVERY AST node
+whose Python class is `BinaryOp` (type(node).__name__).
 """
 
 from typing import Any, Dict, Optional
 
-from parglare_formatter.dsl.ast import RuleFile
+from parglare_formatter.dsl.ast import RuleFile, IMPLICIT_PARAM
 from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
 from parglare_formatter.dsl.parser import parse_dsl
 from parglare_formatter.document_model import Doc, text
 from parglare_formatter.layout_engine import render
+from parglare_formatter.grammar_introspection import extract_list_separators
 
 
 class FormatterError(Exception):
-    """Raised when formatting fails e.g., no DSL rule for a node type,
-    or a rule has wrong number of parameters."""
+    """Raised when formatting fails e.g., no DSL rule for a node type"""
     pass
 
 
@@ -45,20 +43,20 @@ class Formatter:
     """
     _PRIMITIVE_TYPES = (str, int, float, bool)
 
-    def __init__(self, rule_file: RuleFile):
+    def __init__(self, rule_file: RuleFile, grammar=None):
         self.rule_file = rule_file
+        self.list_separators = (
+            extract_list_separators(grammar) if grammar is not None else {}
+        )
 
     @classmethod
-    def from_dsl_source(cls, source: str) -> "Formatter":
-        """Convenience constructor: parse DSL source and create Formatter."""
-        return cls(parse_dsl(source))
+    def from_dsl_source(cls, source: str, grammar=None) -> "Formatter":
+        return cls(parse_dsl(source), grammar=grammar)
 
     @classmethod
-    def from_dsl_file(cls, path: str) -> "Formatter":
-        """Load .dsl file from disk and create Formatter."""
+    def from_dsl_file(cls, path: str, grammar=None) -> "Formatter":
         with open(path, "r", encoding="utf-8") as f:
-            source = f.read()
-        return cls.from_dsl_source(source)
+            return cls.from_dsl_source(f.read(), grammar=grammar)
 
     def _rule_name_for(self, node: Any) -> str:
         """Return DSL rule name for given AST node - by convention,
@@ -78,20 +76,16 @@ class Formatter:
 
             raise FormatterError(
                 f"No DSL rule for node type {rule_name!r}. "
-                f"Define 'rule {rule_name}(node) = ...;' in .dsl file."
+                f"Define 'rule {rule_name} = ...;' in .dsl file."
             )
         rule = self.rule_file.get_rule(rule_name)
-
-        if len(rule.params) != 1:
-            raise FormatterError(
-                f"Rule {rule_name!r} must have exactly ONE parameter "
-                f"(convention: 'node'), but has {len(rule.params)}: {rule.params}"
-            )
-        param_name = rule.params[0]
-        bindings: Dict[str, Any] = {param_name: node}
+        bindings: Dict[str, Any] = {IMPLICIT_PARAM: node}
 
         try:
-            return compile_doc_expr(rule.body, bindings, self.format_node)
+            return compile_doc_expr(
+                rule.body, bindings, self.format_node,
+                list_separators=self.list_separators,
+            )
         except CompileError as e:
             raise FormatterError(
                 f"Error compiling rule {rule_name!r} for node {node!r}: {e}"
