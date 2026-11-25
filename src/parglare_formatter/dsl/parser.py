@@ -131,6 +131,13 @@ def _doc_term_optional_action(context, nodes):
         body=nodes[4],
     )
 
+def _doc_term_format_context_action(context, nodes):
+    # ["format", "(", AttrPath, ",", Ident, ")"]
+    return DocFormat(
+        path=nodes[2],
+        context=nodes[4],
+    )
+
 def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
     return DocAttrRef(path=nodes[0])
@@ -176,6 +183,7 @@ actions = {
         _doc_term_upper_action,     # "upper" "(" AttrPath ")"
         _doc_term_json_escaped_action,   # "escaped" "(" AttrPath ")"
         _doc_term_optional_action,  # "optional" "(" AttrPath "," DocExpr ")"
+        _doc_term_format_context_action, # "format", "(", AttrPath, ",", Ident, ")"
         _doc_term_attrpath_action,  # AttrPath
     ],
     "AttrPath": _attr_path_action,

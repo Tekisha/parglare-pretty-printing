@@ -71,8 +71,9 @@ class DocAlign:
 
 @dataclass
 class DocFormat:
-    """format(AttrPath) - recursive call into the formatter for a sub-node."""
+    """Format a child node, optionally selecting a contextual rule."""
     path: AttrPath
+    context: Optional[str] = None
 
 
 @dataclass

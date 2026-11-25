@@ -58,37 +58,60 @@ class Formatter:
         with open(path, "r", encoding="utf-8") as f:
             return cls.from_dsl_source(f.read(), grammar=grammar)
 
-    def _rule_name_for(self, node: Any) -> str:
-        """Return DSL rule name for given AST node - by convention,
-        the node's Python class name (type(node).__name__)."""
-        return type(node).__name__
+    def _rule_name_for(
+        self,
+        node: Any,
+        context: Optional[str] = None,
+    ) -> str:
+        """Prefer a contextual rule, falling back to the default rule."""
+        base_name = type(node).__name__
 
-    def format_node(self, node: Any) -> Doc:
+        if context is not None:
+            contextual_name = f"{context}_{base_name}"
+
+            if contextual_name in self.rule_file:
+                return contextual_name
+
+        return base_name
+
+    def format_node(
+        self,
+        node: Any,
+        *,
+        context: Optional[str] = None,
+    ) -> Doc:
         """
-        Compile single AST node to Doc by selecting matching DSL rule.
-        This is the `format_node` callback that dsl_compiler.compile_doc_expr
-        calls recursively for format(...), list(...), and bare item.
+        Compile a node using a contextual rule when available.
+
+        Context is local to this invocation. Recursive calls use their
+        own explicitly requested context, or the default rule.
         """
-        rule_name = self._rule_name_for(node)
+        rule_name = self._rule_name_for(node, context)
+
         if rule_name not in self.rule_file:
             if isinstance(node, self._PRIMITIVE_TYPES):
                 return text(str(node))
 
             raise FormatterError(
-                f"No DSL rule for node type {rule_name!r}. "
+                f"No DSL rule for node type {type(node).__name__!r} "
+                f"in context {context!r}. "
                 f"Define 'rule {rule_name} = ...;' in .dsl file."
             )
+
         rule = self.rule_file.get_rule(rule_name)
         bindings: Dict[str, Any] = {IMPLICIT_PARAM: node}
 
         try:
             return compile_doc_expr(
-                rule.body, bindings, self.format_node,
+                rule.body,
+                bindings,
+                self.format_node,
                 list_separators=self.list_separators,
             )
         except CompileError as e:
             raise FormatterError(
-                f"Error compiling rule {rule_name!r} for node {node!r}: {e}"
+                f"Error compiling rule {rule_name!r} "
+                f"for node {node!r}: {e}"
             ) from e
 
     def format(self, node: Any, width: int = 80) -> str:

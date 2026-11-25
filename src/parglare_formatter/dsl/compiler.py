@@ -23,7 +23,7 @@ DocTerm (e.g., list(node.stmts, item) without format() wrapper). Both
 cases compile to the same: recursive format_node(item_value) call.
 """
 import json
-from typing import Any, Callable, Dict
+from typing import Any, Dict, Optional, Protocol
 
 from ..document_model import Doc, text, line, softline, concat, nest, group, align, empty, concat_all
 from .ast import (
@@ -31,8 +31,14 @@ from .ast import (
     DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional,
 )
 
-# Callback signature: (node: Any) -> Doc
-FormatCallback = Callable[[Any], Doc]
+class FormatCallback(Protocol):
+    def __call__(
+        self,
+        node: Any,
+        *,
+        context: Optional[str] = None,
+    ) -> Doc:
+        ...
 
 ITEM_KEY = "item"
 
@@ -147,7 +153,14 @@ def compile_doc_expr(
 
     elif isinstance(expr, DocFormat):
         target_node = _resolve_attr_path(expr.path, bindings)
-        return format_node(target_node)
+
+        if expr.context is None:
+            return format_node(target_node)
+
+        return format_node(
+            target_node,
+            context=expr.context,
+        )
 
     elif isinstance(expr, DocList):
         collection = _resolve_attr_path(expr.path, bindings)
