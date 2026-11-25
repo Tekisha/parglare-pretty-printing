@@ -1,28 +1,50 @@
 rule FileAST =
-    list(node.ext, item, line() ++ line()) ++ line();
+    list(
+        node.ext,
+        format(item, statement),
+        line() ++ line()
+    ) ++
+    line();
 
 rule FuncDef =
-    format(node.decl) ++ text(" ") ++ format(node.body);
+    format(node.decl) ++
+    text(" ") ++
+    format(node.body);
 
 rule Decl =
-    format(node.type);
+    format(node.type) ++
+    optional(
+        node.init,
+        text(" = ") ++ format(node.init)
+    );
+
+rule statement_Decl =
+    format(node) ++ text(";");
 
 rule FuncDecl =
-    format(node.type.type) ++
-    text(" ") ++
-    node.type.declname ++
-    text("(") ++
-    optional(node.args, format(node.args)) ++
-    text(")");
+    group(
+        format(node.type) ++
+        text("(") ++
+        optional(node.args, format(node.args)) ++
+        text(")")
+    );
 
 rule ParamList =
-    list(node.params, item, text(",") ++ softline());
+    list(
+        node.params,
+        item,
+        text(",") ++ softline()
+    );
 
 rule Typename =
     format(node.type);
 
 rule TypeDecl =
-    format(node.type);
+    format(node.type) ++
+    optional(
+        node.declname,
+        text(" ") ++ node.declname
+    );
 
 rule IdentifierType =
     list(node.names, item, text(" "));
@@ -33,7 +55,12 @@ rule Compound =
         node.block_items,
         nest(
             4,
-            line() ++ list(node.block_items, item, line())
+            line() ++
+            list(
+                node.block_items,
+                format(item, statement),
+                line()
+            )
         )
     ) ++
     line() ++
@@ -49,3 +76,19 @@ rule Return =
 
 rule Constant =
     node.value;
+
+rule ID =
+    node.name;
+
+rule BinaryOp =
+    group(
+        text("(") ++
+        format(node.left) ++
+        text(" ") ++
+        node.op ++
+        nest(
+            4,
+            softline() ++ format(node.right)
+        ) ++
+        text(")")
+    );
