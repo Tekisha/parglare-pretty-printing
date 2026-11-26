@@ -46,6 +46,10 @@ SOURCES = [
     "int f(int x) { while (x) x = x - 1; return x; }",
     "int f(int x) { while (x) {} return x; }",
     "int f(int x) { while (add(x, 1) > 0) { x = x - 1; } return x; }",
+    "int f(int x) { if (x) return 1; else if (x) return 2; else return 3; }",
+    "int f(int a, int b) { if (a) if (b) a = 1; else a = 2; return a; }",
+    "int f(int x) { if (x) { return 1; } else return 2; }",
+    "int f(int x) { if (x) return 1; else { return 2; } }",
     """
     int count(int n) {
         int i = 0;
@@ -145,13 +149,13 @@ def test_condition_has_no_extra_parentheses(formatter):
     assert "((" not in output
 
 
-def test_non_block_branch_gets_semicolon(formatter):
+def test_non_block_branch_gets_semicolon_on_new_line(formatter):
     output = formatter.format(
         CParser().parse("int f(int x) { if (x) x = 1; return x; }"),
         width=80,
     )
 
-    assert "if (x) x = 1;" in output
+    assert "    if (x)\n        x = 1;\n" in output
 
 
 def test_narrow_condition_breaks_but_stays_equivalent(formatter):
@@ -166,3 +170,71 @@ def test_narrow_condition_breaks_but_stays_equivalent(formatter):
     assert ast_signature(CParser().parse(wide)) == ast_signature(
         CParser().parse(narrow)
     )
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "int f(int x) { if (x) return 1; else return 2; }",
+            "int f(int x) {\n"
+            "    if (x)\n"
+            "        return 1;\n"
+            "    else\n"
+            "        return 2;\n"
+            "}\n",
+        ),
+        (
+            "int f(int x) { if (x) { return 1; } else return 2; }",
+            "int f(int x) {\n"
+            "    if (x) {\n"
+            "        return 1;\n"
+            "    } else\n"
+            "        return 2;\n"
+            "}\n",
+        ),
+        (
+            "int f(int x) { if (x) return 1; else { return 2; } }",
+            "int f(int x) {\n"
+            "    if (x)\n"
+            "        return 1;\n"
+            "    else {\n"
+            "        return 2;\n"
+            "    }\n"
+            "}\n",
+        ),
+        (
+            "int f(int x) { if (x) return 1; else if (x) return 2; else return 3; }",
+            "int f(int x) {\n"
+            "    if (x)\n"
+            "        return 1;\n"
+            "    else if (x)\n"
+            "        return 2;\n"
+            "    else\n"
+            "        return 3;\n"
+            "}\n",
+        ),
+        (
+            "int f(int a, int b) { if (a) if (b) a = 1; else a = 2; return a; }",
+            "int f(int a, int b) {\n"
+            "    if (a)\n"
+            "        if (b)\n"
+            "            a = 1;\n"
+            "        else\n"
+            "            a = 2;\n"
+            "    return a;\n"
+            "}\n",
+        ),
+        (
+            "int f(int x) { while (x) x = x - 1; return x; }",
+            "int f(int x) {\n"
+            "    while (x)\n"
+            "        x = (x - 1);\n"
+            "    return x;\n"
+            "}\n",
+        ),
+    ],
+)
+def test_branch_layout(formatter, source, expected):
+    output = formatter.format(CParser().parse(source), width=80)
+
+    assert output == expected

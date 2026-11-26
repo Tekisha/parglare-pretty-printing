@@ -168,6 +168,9 @@ parameter list.
   is not inherited by the child's own `format(...)` calls. Context names
   are chosen by the rule author and have no built-in meaning. The C example
   uses `statement` (add `;`) and `bare` (no outer parentheses).
+- **Context default**: if no rule `context_ClassName` exists, the formatter
+  tries `context_default` before the plain `ClassName` rule. The name
+  `default` is therefore reserved and cannot be used as a node class name.
 - **List separators**: an explicit separator is used if given. Otherwise,
   if the grammar defines one for that list, the separator is that literal
   followed by a soft line. Otherwise elements are separated by a hard line.
@@ -212,6 +215,9 @@ Conventions of the C rules:
   header parts are optional (`optional`).
 - Unary operators that are written after the operand (`x++`) are selected
   with `when` on the operator.
+- Branches of `if`, `while` and `for` use the `branch` and `else_branch`
+  contexts: blocks stay on the same line, other statements go on their own
+  indented line.
 
 **JSON example (`json_example/`)**
 - `json_lang_grammar.dsl`: Parlgare grammar for a JSON subset (objects, arrays, strings, numbers, 

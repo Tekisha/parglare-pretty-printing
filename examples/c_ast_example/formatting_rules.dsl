@@ -66,6 +66,9 @@ rule Compound =
     line() ++
     text("}");
 
+rule branch_Compound =
+    text(" ") ++ format(node);
+
 rule Return =
     text("return") ++
     optional(
@@ -141,18 +144,31 @@ rule bare_BinaryOp =
 rule If =
     text("if (") ++
     format(node.cond, bare) ++
-    text(") ") ++
-    format(node.iftrue, statement) ++
+    text(")") ++
+    format(node.iftrue, branch) ++
     optional(
         node.iffalse,
-        text(" else ") ++ format(node.iffalse, statement)
+        format(node.iftrue, before_else) ++
+        format(node.iffalse, else_branch)
     );
+
+rule else_branch_If =
+    text(" ") ++ format(node);
+
+rule else_branch_default =
+    format(node, branch);
+
+rule before_else_Compound =
+    text(" else");
+
+rule before_else_default =
+    line() ++ text("else");
 
 rule While =
     text("while (") ++
     format(node.cond, bare) ++
-    text(") ") ++
-    format(node.stmt, statement);
+    text(")") ++
+    format(node.stmt, branch);
 
 rule bare_UnaryOp =
     when(
@@ -185,5 +201,8 @@ rule For =
     optional(node.cond, text(" ") ++ format(node.cond, bare)) ++
     text(";") ++
     optional(node.next, text(" ") ++ format(node.next, bare)) ++
-    text(") ") ++
-    format(node.stmt, statement);
+    text(")") ++
+    format(node.stmt, branch);
+
+rule branch_default =
+    nest(4, line() ++ format(node, statement));

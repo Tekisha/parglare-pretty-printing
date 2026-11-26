@@ -88,3 +88,38 @@ def test_none_is_not_silently_accepted():
 
     with pytest.raises(FormatterError, match="NoneType"):
         formatter.format(None)
+
+def test_context_default_rule_is_used_without_specific_rule():
+    formatter = Formatter.from_dsl_source(
+        """
+        rule Container = format(node.child, wrap);
+        rule Value = node.value;
+        rule wrap_default = text("<") ++ format(node) ++ text(">");
+        """
+    )
+
+    assert formatter.format(Container(Value(7))) == "<7>"
+
+
+def test_specific_context_rule_wins_over_default():
+    formatter = Formatter.from_dsl_source(
+        """
+        rule Container = format(node.child, wrap);
+        rule Value = node.value;
+        rule wrap_default = text("<") ++ format(node) ++ text(">");
+        rule wrap_Value = text("[") ++ format(node) ++ text("]");
+        """
+    )
+
+    assert formatter.format(Container(Value(7))) == "[7]"
+
+
+def test_default_rule_is_ignored_without_context():
+    formatter = Formatter.from_dsl_source(
+        """
+        rule Value = node.value;
+        rule wrap_default = text("<") ++ format(node) ++ text(">");
+        """
+    )
+
+    assert formatter.format(Value(7)) == "7"

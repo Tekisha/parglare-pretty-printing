@@ -97,7 +97,7 @@ def test_for_layout(formatter):
         ),
         (
             "int f(int n) { for (int i = 0; i < n; i++) ping(); return n; }",
-            "    for (int i = 0; i < n; i++) ping();\n",
+            "    for (int i = 0; i < n; i++)\n        ping();\n",
         ),
     ],
 )
