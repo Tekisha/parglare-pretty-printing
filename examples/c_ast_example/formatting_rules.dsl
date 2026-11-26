@@ -157,3 +157,24 @@ rule While =
     format(node.cond, bare) ++
     text(") ") ++
     format(node.stmt, statement);
+
+rule bare_UnaryOp =
+    when(
+        node.op, "p++",
+        format(node.expr) ++ text("++"),
+        when(
+            node.op, "p--",
+            format(node.expr) ++ text("--"),
+            when(
+                node.op, "sizeof",
+                text("sizeof ") ++ format(node.expr),
+                node.op ++ format(node.expr)
+            )
+        )
+    );
+
+rule UnaryOp =
+    text("(") ++ format(node, bare) ++ text(")");
+
+rule statement_UnaryOp =
+    format(node, bare) ++ text(";");
