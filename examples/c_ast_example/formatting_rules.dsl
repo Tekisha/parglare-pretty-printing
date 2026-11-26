@@ -130,3 +130,30 @@ rule ExprList =
             text(",") ++ softline()
         )
     );
+
+rule bare_BinaryOp =
+    group(
+        format(node.left) ++
+        text(" ") ++
+        node.op ++
+        nest(
+            4,
+            softline() ++ format(node.right)
+        )
+    );
+
+rule If =
+    text("if (") ++
+    format(node.cond, bare) ++
+    text(") ") ++
+    format(node.iftrue, statement) ++
+    optional(
+        node.iffalse,
+        text(" else ") ++ format(node.iffalse, statement)
+    );
+
+rule While =
+    text("while (") ++
+    format(node.cond, bare) ++
+    text(") ") ++
+    format(node.stmt, statement);
