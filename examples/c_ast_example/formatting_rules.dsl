@@ -94,21 +94,17 @@ rule BinaryOp =
     );
 
 rule Assignment =
-    text("(") ++
+    text("(") ++ format(node, bare) ++ text(")");
+
+rule bare_Assignment =
     format(node.lvalue) ++
     text(" ") ++
     node.op ++
     text(" ") ++
-    format(node.rvalue) ++
-    text(")");
+    format(node.rvalue);
 
 rule statement_Assignment =
-    format(node.lvalue) ++
-    text(" ") ++
-    node.op ++
-    text(" ") ++
-    format(node.rvalue) ++
-    text(";");
+    format(node, bare) ++ text(";");
 
 rule FuncCall =
     group(
@@ -178,3 +174,16 @@ rule UnaryOp =
 
 rule statement_UnaryOp =
     format(node, bare) ++ text(";");
+
+rule DeclList =
+    list(node.decls, item, text(", "));
+
+rule For =
+    text("for (") ++
+    optional(node.init, format(node.init, bare)) ++
+    text(";") ++
+    optional(node.cond, text(" ") ++ format(node.cond, bare)) ++
+    text(";") ++
+    optional(node.next, text(" ") ++ format(node.next, bare)) ++
+    text(") ") ++
+    format(node.stmt, statement);
