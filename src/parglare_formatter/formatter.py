@@ -63,14 +63,17 @@ class Formatter:
         node: Any,
         context: Optional[str] = None,
     ) -> str:
-        """Prefer a contextual rule, falling back to the default rule."""
+        """Pick the most specific rule: context+class, context default,
+        then the plain class rule."""
         base_name = type(node).__name__
 
         if context is not None:
-            contextual_name = f"{context}_{base_name}"
-
-            if contextual_name in self.rule_file:
-                return contextual_name
+            for candidate in (
+                f"{context}_{base_name}",
+                f"{context}_default",
+            ):
+                if candidate in self.rule_file:
+                    return candidate
 
         return base_name
 
