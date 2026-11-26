@@ -13,6 +13,15 @@ dependencies = [
     "parglare>=0.22.0",
 ]
 
+[project.optional-dependencies]
+c-example = [
+    "pycparser>=3.0",
+]
+test = [
+    "pytest",
+    "pycparser>=3.0",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["parglare_formatter*"]

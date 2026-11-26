@@ -249,26 +249,23 @@ rule BinaryOp =
 **Tests and how to run**
 From the project root:
 ```bash
-# Install in editable mode
-python -m pip install -e .
-
-# The C tests requires 'pycparser'
-python -m pip install pycparser
+# Install in editable mode, with the test dependencies
+# (pytest and pycparser, which the C example and C tests need)
+python -m pip install -e ".[test]"
 
 # Run all tests
-pytest
+python -m pytest
 
-# Run JSON example
-python examples/json_example/test_code.py
-
-# Run calc example
-python examples/calc_example/test_code.py
+# Run the examples
+python -m examples.json_example.test_code
+python -m examples.calc_example.test_code
 ```
 
-The C example requires `pycparser`:
+To run only the C example without the test tooling, install `pycparser`
+through the extra:
 
 ```bash
-python -m pip install pycparser
+python -m pip install -e ".[c-example]"
 ```
 
 The tests cover:
