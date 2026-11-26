@@ -92,3 +92,41 @@ rule BinaryOp =
         ) ++
         text(")")
     );
+
+rule Assignment =
+    text("(") ++
+    format(node.lvalue) ++
+    text(" ") ++
+    node.op ++
+    text(" ") ++
+    format(node.rvalue) ++
+    text(")");
+
+rule statement_Assignment =
+    format(node.lvalue) ++
+    text(" ") ++
+    node.op ++
+    text(" ") ++
+    format(node.rvalue) ++
+    text(";");
+
+rule FuncCall =
+    group(
+        format(node.name) ++
+        text("(") ++
+        optional(node.args, format(node.args)) ++
+        text(")")
+    );
+
+rule statement_FuncCall =
+    format(node) ++ text(";");
+
+rule ExprList =
+    nest(
+        4,
+        list(
+            node.exprs,
+            item,
+            text(",") ++ softline()
+        )
+    );
