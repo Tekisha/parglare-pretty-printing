@@ -28,7 +28,7 @@ from typing import Any, Dict, Optional, Protocol
 from ..document_model import Doc, text, line, softline, concat, nest, group, align, empty, concat_all
 from .ast import (
     AttrPath, DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup,
-    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional,
+    DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional, DocWhen,
 )
 
 class FormatCallback(Protocol):
@@ -202,6 +202,21 @@ def compile_doc_expr(
                 "only inside second argument of list(path, <here>)"
             )
         return format_node(bindings[ITEM_KEY])
+
+    elif isinstance(expr, DocWhen):
+        value = _resolve_attr_path(expr.path, bindings)
+
+        if isinstance(value, str) and value == expr.value:
+            return compile_doc_expr(
+                expr.then, bindings, format_node, list_separators
+            )
+
+        if expr.otherwise is not None:
+            return compile_doc_expr(
+                expr.otherwise, bindings, format_node, list_separators
+            )
+
+        return empty()
 
     elif isinstance(expr, DocLower):
         value = _resolve_attr_path(expr.path, bindings)

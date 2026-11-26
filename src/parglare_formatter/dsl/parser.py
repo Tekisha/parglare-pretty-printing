@@ -33,7 +33,7 @@ from .grammar import DSL_GRAMMAR
 from .ast import (
     RuleFile, RuleDecl, AttrPath,
     DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup, DocAlign,
-    DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional,
+    DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional, DocWhen,
 )
 
 def _rule_file_action(context, nodes):
@@ -46,6 +46,9 @@ def _rule_file_action(context, nodes):
 def _rule_decl_action(context, nodes, name, body):
     # RuleDecl: "rule" name=Ident "=" body=DocExpr ";" ;
     return RuleDecl(name=name, body=body)
+
+def _unquote(raw):
+    return re.sub(r'\\(.)', r'\1', raw[1:-1])
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +141,24 @@ def _doc_term_format_context_action(context, nodes):
         context=nodes[4],
     )
 
+def _doc_term_when_action(context, nodes):
+    # ["when", "(", AttrPath, ",", String, ",", DocExpr, ")"]
+    return DocWhen(
+        path=nodes[2],
+        value=_unquote(nodes[4]),
+        then=nodes[6],
+    )
+
+
+def _doc_term_when_else_action(context, nodes):
+    # ["when", "(", AttrPath, ",", String, ",", DocExpr, ",", DocExpr, ")"]
+    return DocWhen(
+        path=nodes[2],
+        value=_unquote(nodes[4]),
+        then=nodes[6],
+        otherwise=nodes[8],
+    )
+
 def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
     return DocAttrRef(path=nodes[0])
@@ -183,7 +204,9 @@ actions = {
         _doc_term_upper_action,     # "upper" "(" AttrPath ")"
         _doc_term_json_escaped_action,   # "escaped" "(" AttrPath ")"
         _doc_term_optional_action,  # "optional" "(" AttrPath "," DocExpr ")"
-        _doc_term_format_context_action, # "format", "(", AttrPath, ",", Ident, ")"
+        _doc_term_format_context_action, # "format" "(" AttrPath "," Ident, ")"
+        _doc_term_when_action, # "when" "(" AttrPath "," String "," DocExpr ")"
+        _doc_term_when_else_action, # when" "(" AttrPath "," String "," DocExpr "," DocExpr ")"
         _doc_term_attrpath_action,  # AttrPath
     ],
     "AttrPath": _attr_path_action,

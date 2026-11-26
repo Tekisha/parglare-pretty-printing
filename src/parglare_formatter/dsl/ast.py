@@ -121,13 +121,21 @@ class DocOptional:
     path: AttrPath
     body: "DocExpr"
 
+@dataclass
+class DocWhen:
+    """when(AttrPath, "literal", then[, otherwise])"""
+    path: AttrPath
+    value: str
+    then: "DocExpr"
+    otherwise: Optional["DocExpr"] = None
+
 
 # DocExpr = "DocConcat | DocText | DocLine | DocSoftline | DocNest | " \
-#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef | DocOptional"
+#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef | DocOptional | DocWhen "
 
 DocExpr = Union[
     DocConcat, DocText, DocLine, DocSoftline, DocNest,
-    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional,
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional, DocWhen
 ]
 
 # ---------------------------------------------------------------------------
