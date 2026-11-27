@@ -88,3 +88,6 @@ class TestJsonFormatterSuite:
         formatter = Formatter.from_dsl_source(rules)
         ast = self.parser.parse("[1, 2]")
         assert "," not in formatter.format(ast, width=80)
+
+    def test_json_rules_have_no_problems(self):
+        assert self.derived_formatter.check() == []

@@ -128,3 +128,6 @@ def test_optional_c_construct_layout(c_formatter, source, expected):
     ast = parse_c(source)
 
     assert c_formatter.format(ast, width=80) == expected
+
+def test_c_rules_have_no_problems(c_formatter):
+    assert c_formatter.check() == []
