@@ -61,6 +61,7 @@ DocTerm: "text" "(" StringLiteral ")"
        | "format" "(" AttrPath "," Ident ")"
        | "when" "(" AttrPath "," StringLiteral "," DocExpr ")"
        | "when" "(" AttrPath "," StringLiteral "," DocExpr "," DocExpr ")"
+       | StringLiteral
        | AttrPath
        ;
 

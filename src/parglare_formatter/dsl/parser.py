@@ -178,6 +178,10 @@ def _doc_term_when_else_action(context, nodes):
         otherwise=nodes[8],
     )
 
+def _doc_term_string_action(context, nodes):
+    # DocTerm: StringLiteral ;  -- shorthand for text("...")
+    return DocText(value=_unquote(nodes[0]))
+
 def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
     return DocAttrRef(path=nodes[0])
@@ -230,6 +234,7 @@ actions = {
         _doc_term_format_context_action, # "format" "(" AttrPath "," Ident, ")"
         _doc_term_when_action, # "when" "(" AttrPath "," String "," DocExpr ")"
         _doc_term_when_else_action, # when" "(" AttrPath "," String "," DocExpr "," DocExpr ")"
+        _doc_term_string_action,
         _doc_term_attrpath_action,  # AttrPath
     ],
     "AttrPath": _attr_path_action,
