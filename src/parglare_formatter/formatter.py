@@ -16,19 +16,32 @@ Convention: DSL rule `rule BinaryOp = ...` applies to EVERY AST node
 whose Python class is `BinaryOp` (type(node).__name__).
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
-from parglare_formatter.dsl.ast import RuleFile, IMPLICIT_PARAM
+from parglare_formatter.dsl.ast import RuleFile, IMPLICIT_PARAM, DocFormat
 from parglare_formatter.dsl.compiler import compile_doc_expr, CompileError
 from parglare_formatter.dsl.parser import parse_dsl
 from parglare_formatter.document_model import Doc, text
 from parglare_formatter.layout_engine import render
 from parglare_formatter.grammar_introspection import extract_list_separators
 
+from dataclasses import fields, is_dataclass
+
 
 class FormatterError(Exception):
     """Raised when formatting fails e.g., no DSL rule for a node type"""
     pass
+
+def _walk(expr):
+    """Yield every DSL AST node reachable from `expr`."""
+    yield expr
+    if is_dataclass(expr):
+        for f in fields(expr):
+            value = getattr(expr, f.name)
+            children = value if isinstance(value, list) else [value]
+            for child in children:
+                if is_dataclass(child):
+                    yield from _walk(child)
 
 
 class Formatter:
@@ -124,6 +137,40 @@ class Formatter:
         """
         doc = self.format_node(node)
         return render(doc, width=width)
+
+    def check(self) -> List[str]:
+        """Report likely mistakes in the rule file.
+
+        Returns an empty list when nothing suspicious is found. It never
+        raises and does not change how formatting behaves.
+        """
+        rules = self.rule_file.rules
+        names = [rule.name for rule in rules]
+
+        used = {}
+        for rule in rules:
+            for expr in _walk(rule.body):
+                if isinstance(expr, DocFormat) and expr.context:
+                    used.setdefault(expr.context, rule.name)
+
+        problems = []
+
+        for context, rule_name in sorted(used.items()):
+            if not any(name.startswith(context + "_") for name in names):
+                problems.append(
+                    f"Context {context!r} used in rule {rule_name!r} "
+                    f"has no rules named '{context}_*'."
+                )
+
+        for name in names:
+            prefixes = {name[:i] for i, c in enumerate(name) if c == "_" and i}
+            if prefixes and not prefixes & used.keys():
+                problems.append(
+                    f"Rule {name!r} looks contextual, but no rule uses "
+                    f"its context (typo?)."
+                )
+
+        return problems
 
 
 def format_ast(node: Any, dsl_source: str, width: int = 80) -> str:
