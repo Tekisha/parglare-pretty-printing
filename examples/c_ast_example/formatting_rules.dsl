@@ -8,29 +8,29 @@ rule FileAST =
 
 rule FuncDef =
     format(node.decl) ++
-    text(" ") ++
+    " " ++
     format(node.body);
 
 rule Decl =
     format(node.type) ++
     optional(
         node.init,
-        text(" = ") ++ format(node.init)
+        " = " ++ format(node.init)
     );
 
 rule FuncDecl =
     group(
         format(node.type) ++
-        text("(") ++
+        "(" ++
         optional(node.args, format(node.args)) ++
-        text(")")
+        ")"
     );
 
 rule ParamList =
     list(
         node.params,
         item,
-        text(",") ++ softline()
+        "," ++ softline()
     );
 
 rule Typename =
@@ -40,14 +40,14 @@ rule TypeDecl =
     format(node.type) ++
     optional(
         node.declname,
-        text(" ") ++ node.declname
+        " " ++ node.declname
     );
 
 rule IdentifierType =
-    list(node.names, item, text(" "));
+    list(node.names, item, " ");
 
 rule Compound =
-    text("{") ++
+    "{" ++
     optional(
         node.block_items,
         nest(
@@ -61,18 +61,18 @@ rule Compound =
         )
     ) ++
     line() ++
-    text("}");
+    "}";
 
 rule branch_Compound =
-    text(" ") ++ format(node);
+    " " ++ format(node);
 
 rule Return =
-    text("return") ++
+    "return" ++
     optional(
         node.expr,
-        text(" ") ++ format(node.expr)
+        " " ++ format(node.expr)
     ) ++
-    text(";");
+    ";";
 
 rule Constant =
     node.value;
@@ -82,33 +82,33 @@ rule ID =
 
 rule BinaryOp =
     group(
-        text("(") ++
+        "(" ++
         format(node.left) ++
-        text(" ") ++
+        " " ++
         node.op ++
         nest(
             4,
             softline() ++ format(node.right)
         ) ++
-        text(")")
+        ")"
     );
 
 rule Assignment =
-    text("(") ++ format(node, bare) ++ text(")");
+    "(" ++ format(node, bare) ++ ")";
 
 rule bare_Assignment =
     format(node.lvalue) ++
-    text(" ") ++
+    " " ++
     node.op ++
-    text(" ") ++
+    " " ++
     format(node.rvalue);
 
 rule FuncCall =
     group(
         format(node.name) ++
-        text("(") ++
+        "(" ++
         optional(node.args, format(node.args)) ++
-        text(")")
+        ")"
     );
 
 rule ExprList =
@@ -117,14 +117,14 @@ rule ExprList =
         list(
             node.exprs,
             item,
-            text(",") ++ softline()
+            "," ++ softline()
         )
     );
 
 rule bare_BinaryOp =
     group(
         format(node.left) ++
-        text(" ") ++
+        " " ++
         node.op ++
         nest(
             4,
@@ -133,9 +133,9 @@ rule bare_BinaryOp =
     );
 
 rule If =
-    text("if (") ++
+    "if (" ++
     format(node.cond, bare) ++
-    text(")") ++
+    ")" ++
     format(node.iftrue, branch) ++
     optional(
         node.iffalse,
@@ -144,59 +144,59 @@ rule If =
     );
 
 rule else_branch_If =
-    text(" ") ++ format(node);
+    " " ++ format(node);
 
 rule else_branch_default =
     format(node, branch);
 
 rule before_else_Compound =
-    text(" else");
+    " else";
 
 rule before_else_default =
-    line() ++ text("else");
+    line() ++ "else";
 
 rule While =
-    text("while (") ++
+    "while (" ++
     format(node.cond, bare) ++
-    text(")") ++
+    ")" ++
     format(node.stmt, branch);
 
 rule bare_UnaryOp =
     when(
         node.op, "p++",
-        format(node.expr) ++ text("++"),
+        format(node.expr) ++ "++",
         when(
             node.op, "p--",
-            format(node.expr) ++ text("--"),
+            format(node.expr) ++ "--",
             when(
                 node.op, "sizeof",
-                text("sizeof ") ++ format(node.expr),
+                "sizeof " ++ format(node.expr),
                 node.op ++ format(node.expr)
             )
         )
     );
 
 rule UnaryOp =
-    text("(") ++ format(node, bare) ++ text(")");
+    "(" ++ format(node, bare) ++ ")";
 
 rule DeclList =
-    list(node.decls, item, text(", "));
+    list(node.decls, item, ", ");
 
 rule For =
-    text("for (") ++
+    "for (" ++
     optional(node.init, format(node.init, bare)) ++
-    text(";") ++
-    optional(node.cond, text(" ") ++ format(node.cond, bare)) ++
-    text(";") ++
-    optional(node.next, text(" ") ++ format(node.next, bare)) ++
-    text(")") ++
+    ";" ++
+    optional(node.cond, " " ++ format(node.cond, bare)) ++
+    ";" ++
+    optional(node.next, " " ++ format(node.next, bare)) ++
+    ")" ++
     format(node.stmt, branch);
 
 rule branch_default =
     nest(4, line() ++ format(node, statement));
 
 rule statement_Decl, statement_FuncCall =
-    format(node) ++ text(";");
+    format(node) ++ ";";
 
 rule statement_Assignment, statement_UnaryOp =
-    format(node, bare) ++ text(";");
+    format(node, bare) ++ ";";

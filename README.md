@@ -166,7 +166,7 @@ still be unique across the whole file.
 | `lower(path)`, `upper(path)` | Lower-/upper-cased text of an attribute |
 | `escaped(path)` | JSON-style escaping of a string attribute (without outer quotes) |
 | `node.attr` | Attribute value inserted as text |
-
+| `"..."` | Shorthand for `text("...")` |
 
 ### Semantics worth knowing
 
