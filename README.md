@@ -133,6 +133,16 @@ rule ClassName =
 The node being formatted is bound implicitly as `node`. Rules have no
 parameter list.
 
+A rule can be declared for several node classes at once:
+
+```text
+rule statement_Decl, statement_FuncCall =
+    format(node) ++ text(";");
+```
+
+This is shorthand for one rule per name with the same body. Names must
+still be unique across the whole file.
+
 
 ### Document expressions
 

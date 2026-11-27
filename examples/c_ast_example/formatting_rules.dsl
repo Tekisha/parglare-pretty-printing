@@ -18,9 +18,6 @@ rule Decl =
         text(" = ") ++ format(node.init)
     );
 
-rule statement_Decl =
-    format(node) ++ text(";");
-
 rule FuncDecl =
     group(
         format(node.type) ++
@@ -106,9 +103,6 @@ rule bare_Assignment =
     text(" ") ++
     format(node.rvalue);
 
-rule statement_Assignment =
-    format(node, bare) ++ text(";");
-
 rule FuncCall =
     group(
         format(node.name) ++
@@ -116,9 +110,6 @@ rule FuncCall =
         optional(node.args, format(node.args)) ++
         text(")")
     );
-
-rule statement_FuncCall =
-    format(node) ++ text(";");
 
 rule ExprList =
     nest(
@@ -188,9 +179,6 @@ rule bare_UnaryOp =
 rule UnaryOp =
     text("(") ++ format(node, bare) ++ text(")");
 
-rule statement_UnaryOp =
-    format(node, bare) ++ text(";");
-
 rule DeclList =
     list(node.decls, item, text(", "));
 
@@ -206,3 +194,9 @@ rule For =
 
 rule branch_default =
     nest(4, line() ++ format(node, statement));
+
+rule statement_Decl, statement_FuncCall =
+    format(node) ++ text(";");
+
+rule statement_Assignment, statement_UnaryOp =
+    format(node, bare) ++ text(";");
