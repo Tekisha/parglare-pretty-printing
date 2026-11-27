@@ -69,8 +69,13 @@ ListSeparator: "," separator=DocExpr ;
 
 AttrPath: Ident (Dot Ident)* ;
 
+LAYOUT: LayoutItem | LAYOUT LayoutItem | EMPTY ;
+LayoutItem: WS | Comment ;
+
 terminals
 
+WS: /\s+/ ;
+Comment: /\/\/.*/ ;
 Dot: "." ;
 Ident: /[a-zA-Z_][a-zA-Z0-9_]*/ ;
 StringLiteral: /"(\\.|[^"\\])*"/ ;
