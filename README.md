@@ -195,6 +195,10 @@ string literal is part of the string.
   The branch that is not selected is not evaluated.
 - A missing attribute is always an error (`CompileError`), including inside
   `optional` and `when`.
+- **Attributes inserted as text** (`node.attr`, `lower(...)`, `upper(...)`,
+  `escaped(...)`) must not be `None`. Such a value raises an error that
+  names the attribute; guard attributes that may be absent with
+  `optional(...)`.
 
 ## Example languages
 

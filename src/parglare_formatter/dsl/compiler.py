@@ -78,6 +78,22 @@ def _resolve_attr_path(path: AttrPath, bindings: Dict[str, Any]) -> Any:
         value = getattr(value, attr)
     return value
 
+def _resolve_text_value(path: AttrPath, bindings: Dict[str, Any]) -> Any:
+    """Resolve an attribute that will be inserted as text.
+
+    None is rejected instead of being printed as the text "None"; use
+    optional(path, ...) for attributes that may be absent.
+    """
+    value = _resolve_attr_path(path, bindings)
+
+    if value is None:
+        raise CompileError(
+            f"Value at {str(path)!r} is None and cannot be inserted as "
+            f"text; guard it with optional({path}, ...) if it may be absent"
+        )
+
+    return value
+
 def _escape_json_string(value: str) -> str:
     s = json.dumps(value)
     return s[1:-1]
@@ -219,20 +235,20 @@ def compile_doc_expr(
         return empty()
 
     elif isinstance(expr, DocLower):
-        value = _resolve_attr_path(expr.path, bindings)
+        value = _resolve_text_value(expr.path, bindings)
         return text(str(value).lower())
 
     elif isinstance(expr, DocUpper):
-        value = _resolve_attr_path(expr.path, bindings)
+        value = _resolve_text_value(expr.path, bindings)
         return text(str(value).upper())
 
     elif isinstance(expr, DocJsonEscaped):
-        value = _resolve_attr_path(expr.path, bindings)
+        value = _resolve_text_value(expr.path, bindings)
         s = _escape_json_string(str(value))
         return text(s)
 
     elif isinstance(expr, DocAttrRef):
-        value = _resolve_attr_path(expr.path, bindings)
+        value = _resolve_text_value(expr.path, bindings)
         return text(str(value))
 
     else:
