@@ -37,18 +37,37 @@ from .ast import (
 )
 
 def _rule_file_action(context, nodes):
-    # RuleFile: RuleDecl+ ;  -> nodes[0] is a list of RuleDecl (since
-    # RuleDecl+ is a built-in repetition, parglare already collects it
-    # into a list)
-    return RuleFile(rules=list(nodes[0]))
+    # RuleFile: RuleDecl+ ;  -> a rule declaration with several names
+    # expands to several RuleDecl objects, so the collected list may
+    # contain nested lists.
+    return RuleFile(rules=list(_flatten(nodes[0])))
 
 
-def _rule_decl_action(context, nodes, name, body):
-    # RuleDecl: "rule" name=Ident "=" body=DocExpr ";" ;
-    return RuleDecl(name=name, body=body)
+def _rule_names_append_action(context, nodes):
+    # RuleNames: RuleNames "," Ident ;
+    return nodes[0] + [nodes[2]]
+
+
+def _rule_names_single_action(context, nodes):
+    # RuleNames: Ident ;
+    return [nodes[0]]
+
+
+def _rule_decl_action(context, nodes, names, body):
+    # RuleDecl: "rule" names=RuleNames "=" body=DocExpr ";" ;
+    # One declaration with several names is shorthand for one rule per
+    # name, all sharing the same body.
+    return [RuleDecl(name=name, body=body) for name in names]
 
 def _unquote(raw):
     return re.sub(r'\\(.)', r'\1', raw[1:-1])
+
+def _flatten(items):
+    for item in items:
+        if isinstance(item, list):
+            yield from _flatten(item)
+        else:
+            yield item
 
 
 # ---------------------------------------------------------------------------
@@ -186,6 +205,10 @@ def _attr_path_action(context, nodes):
 actions = {
     "RuleFile": _rule_file_action,
     "RuleDecl": _rule_decl_action,
+    "RuleNames": [
+        _rule_names_append_action,  # RuleNames "," Ident
+        _rule_names_single_action,  # Ident
+    ],
     "DocExpr": [
         _doc_expr_concat_action,   # DocExpr "++" DocTerm {left}
         _doc_expr_single_action,   # DocTerm
