@@ -1,3 +1,14 @@
+// Formatting rules for a subset of pycparser's C AST.
+//
+// Contexts (a rule named `context_Class` overrides `Class` when the
+// parent asks for that context; `context_default` is the fallback):
+//   statement   - node printed as a statement (adds ';' where needed)
+//   bare        - expression without its outer parentheses
+//   branch      - body of if / while / for
+//   else_branch - body after `else`
+//   before_else - text between the `then` branch and `else`
+
+
 rule FileAST =
     list(
         node.ext,
@@ -80,6 +91,8 @@ rule Constant =
 rule ID =
     node.name;
 
+// Expressions are always parenthesized so the printed text keeps the
+// structure of the AST; statements and conditions use the `bare` form.
 rule BinaryOp =
     group(
         "(" ++

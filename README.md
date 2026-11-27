@@ -143,6 +143,9 @@ rule statement_Decl, statement_FuncCall =
 This is shorthand for one rule per name with the same body. Names must
 still be unique across the whole file.
 
+Comments start with `//` and run to the end of the line. A `//` inside a
+string literal is part of the string.
+
 
 ### Document expressions
 
