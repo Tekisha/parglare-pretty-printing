@@ -30,14 +30,15 @@ with Parglare's semantic action
 ## High-Level Pipeline
 
 Conceptually, the pipeline has two tracks that meet in the formatter:
-1. **Language track (syntax to AST)**
-   - A Parglare grammar (*.dsl) defines the input language (eg. JSON, calculator expressions).
-   - A Parglare parser and semantic actions build a langugage AST (eg. JsonObject, JsonArray, BinaryOp).
+1. **Language track (source to AST)**
+   - A parser (a Parglare grammar for JSON, `pycparser` for C) produces the
+     AST of the input language.
 
-2. **Formating track (rules to DocExpr)**
-    - A formatting rules file (formatting_rules.dsl) defines, per AST type, how to render that node.
-    - A DSL parser builds a DSL AST of document
-expressions (DocConcat, DocText, DocGroup, DocList, etc.)
+2. **Formatting track (rules to DocExpr)**
+   - A rules file (`formatting_rules.dsl`) defines, per AST node class (and
+     optionally per context), how to render that node.
+   - The DSL parser builds a DSL AST of document expressions (`DocConcat`,
+     `DocText`, `DocGroup`, `DocList`, `DocOptional`, `DocWhen`, etc.).
 
 These two track converge in the Doc Compiler and layout engine:
 - The compiler takes a formatting rule (a DocExpr) and a concrete AST node
@@ -57,16 +58,19 @@ Located under `src/parglare_formatter/`:
 - Provides convenience combinators: `text()`, `line()`, `softline()`, `group()`,
 `nest()`, `align()`, `concat()`, `empty()`
 
-**Layout engine(`layout_engine.py`)**:
-- Implements a Wadler/Leijen style layout algorithm:
-  - Decides whether `Group(doc)` is rendered in a single flat line or broken across
-multiple lines based on remaining width
-  - Interprets `Softline` as either a space(flat layout) or newline(broken layout)
-and applies indentation via `Nest`.
+**Layout engine (`layout_engine.py`)**
+- Wadler/Leijen-style renderer.
+- A `Group` is rendered flat if it fits in the remaining width, otherwise
+  broken.
+- A soft line becomes a space in a flat group and a newline in a broken
+  group. Outside any group it is rendered as a newline.
+- A hard line (`line()`) is always a newline, even inside a flat group.
+- `Nest` adds indentation after line breaks, and `Align` aligns
+  continuation lines with the current column.
 
 **Formatting DSL grammar and AST**
 - `dsl/grammar.py`: Parglare grammar for the formatting DSL:
-  - `RuleFile`, `RuleDecl` for `rule Name(params) = DocExpr;`
+  - `RuleFile`, `RuleDecl` for `rule Name = DocExpr;`
   - `DocExpr` with ++ concatenation and term forms:
     - `text("...")`, `line()`, `softline()`, `nest(n,doc)`, `group(doc)`,
 `align(doc)`
@@ -74,12 +78,15 @@ and applies indentation via `Nest`.
     - `list(path, body, separator?)`, `item` placeholder, and attribute references (`AttrPath`)
 - `dsl/ast.py`: Dataclasses for DSL AST:
   - Structural nodes: `DocConcat`, `DocText`, `DocLine`, `DocSoftline`, `DocNest`,
-`DocGroup`, `DocAlign`, `DocFormat`, `DocList`, `DocItem`, `DocAttrRef`.
+`DocGroup`, `DocAlign`, `DocFormat`, `DocList`, `DocItem`, `DocAttrRef`, `DocOptional`, `DocWhen`.
   - Transform nodes: `DocLower`, `DocUpper`, `DocJsonEscaped` (JSON style string escaping) 
   - Rule nodes: `RuleDecl`, `RuleFile`
 - `dsl/parser.py`L Parglare based DSL parser:
   - Semantic actions map grammar productions to `ast` classes
   - Public entrypoint: `parse_dsl(source: str) -> RuleFile`
+- `compiler.py`: `compile_doc_expr(expr, bindings, format_node,
+  list_separators)` evaluates a `DocExpr` over concrete AST nodes and
+  returns a `Doc`. Evaluation errors raise `CompileError`.
 
 **DSL compiler (`/dsl/compiler.py`)**:
 - Compiles DSL document expressions (`DocExpr`) into concrete Doc trees
@@ -92,6 +99,11 @@ against a bindings environment, typically `{"nodes": ..., "item": ...}`
 without outer quotes).
   - `DocAttrRef`: inserts primitive values via `text(str(value))`
 
+**Grammar introspection (`grammar_introspection.py`)**
+- `extract_list_separators(grammar)` reads separator literals from a
+  Parglare grammar, so that `list(...)` can use the language's own
+  separator (for example `,`) without repeating it in the rules.
+
 **Formatter API (`formatter.py`)**:
 - Main user-facing entrypoint:
   ```python
@@ -101,16 +113,130 @@ without outer quotes).
    formatted = formatter.format(ast_root, width=80)
   ```
 - Responsibilities:
-  - Loads and stores a `RuleFile` (parsed DSL).
-  - Selects a rule by Python class name: e.g. 'JsonObject' -> `rule JsonObject(node) = ...`.
-  - Invokes the DSL compiler to produce a Doc tree.
-  - Runs the layout engine to obtain the final string.
+  - Loads a `RuleFile` and, optionally, separator information from a
+    Parglare grammar (`Formatter.from_dsl_file(path, grammar=grammar)`).
+  - Selects a rule by the node's Python class name.
+  - Compiles the rule to a `Doc` and renders it with the layout engine.
+  - Errors are reported as `FormatterError`.
+  - A one-call helper is also available:
+    `format_ast(node, dsl_source, width=80)`.
+
+## DSL Reference
+
+A rules file is a sequence of rules:
+
+```text
+rule ClassName =
+    ;
+```
+
+The node being formatted is bound implicitly as `node`. Rules have no
+parameter list.
+
+A rule can be declared for several node classes at once:
+
+```text
+rule statement_Decl, statement_FuncCall =
+    format(node) ++ text(";");
+```
+
+This is shorthand for one rule per name with the same body. Names must
+still be unique across the whole file.
+
+Comments start with `//` and run to the end of the line. A `//` inside a
+string literal is part of the string.
+
+
+### Document expressions
+
+| Construct | Meaning |
+|---|---|
+| `text("...")` | Literal text |
+| `a ++ b` | Concatenation (left-associative) |
+| `line()` | Hard line break |
+| `softline()` | Space in a flat group, newline in a broken group (newline outside groups) |
+| `nest(n, doc)` | Indent line breaks inside `doc` by `n` |
+| `group(doc)` | Try a flat layout, otherwise break |
+| `align(doc)` | Align continuation lines with the current column |
+| `format(path)` | Format the node at `path` with its default rule |
+| `format(path, context)` | Format with the rule `context_ClassName` if it exists, otherwise the default rule |
+| `list(path, body)` | Format each element of a list using `body` |
+| `list(path, body, sep)` | Same, with `sep` between elements |
+| `item` | Current element inside `list(...)`, formatted recursively |
+| `optional(path, body)` | `body` unless the value at `path` is `None` (otherwise nothing) |
+| `when(path, "lit", a)` | `a` if the value at `path` is the string `lit`, otherwise nothing |
+| `when(path, "lit", a, b)` | `a` if the value equals `lit`, otherwise `b` |
+| `lower(path)`, `upper(path)` | Lower-/upper-cased text of an attribute |
+| `escaped(path)` | JSON-style escaping of a string attribute (without outer quotes) |
+| `node.attr` | Attribute value inserted as text |
+| `"..."` | Shorthand for `text("...")` |
+
+### Semantics worth knowing
+
+- **Rule selection**: by `type(node).__name__`. Primitive values (`str`,
+  `int`, `float`, `bool`) without a rule are emitted as text. `None` is not
+  formatted silently, so use `optional(...)` for optional fields.
+- **Contexts**: `format(child, ctx)` looks up the rule `ctx_ClassName` first
+  and falls back to `ClassName`. A context applies to that single call and
+  is not inherited by the child's own `format(...)` calls. Context names
+  are chosen by the rule author and have no built-in meaning. The C example
+  uses `statement` (add `;`) and `bare` (no outer parentheses).
+- **Context default**: if no rule `context_ClassName` exists, the formatter
+  tries `context_default` before the plain `ClassName` rule. The name
+  `default` is therefore reserved and cannot be used as a node class name.
+- **List separators**: an explicit separator is used if given. Otherwise,
+  if the grammar defines one for that list, the separator is that literal
+  followed by a soft line. Otherwise elements are separated by a hard line.
+  An empty list produces nothing.
+- **`optional`** only treats `None` as absent. Values such as `0`, `False`,
+  `""` and `[]` are formatted normally. The body of an absent value is not
+  evaluated.
+- **`when`** compares strings only. Non-string values never match.
+  The branch that is not selected is not evaluated.
+- A missing attribute is always an error (`CompileError`), including inside
+  `optional` and `when`.
+- **Attributes inserted as text** (`node.attr`, `lower(...)`, `upper(...)`,
+  `escaped(...)`) must not be `None`. Such a value raises an error that
+  names the attribute; guard attributes that may be absent with
+  `optional(...)`.
 
 ## Example languages
 
 Located under `examples/`:
 
-**JSON example (`json_example/`)
+**C (`c_ast_example/`)**
+
+A subset of C, parsed with [`pycparser`](https://github.com/eliben/pycparser)
+and formatted by DSL rules only. The pycparser code generator is not used.
+
+- `formatting_rules.dsl`: rules for pycparser node classes.
+- `ast_utils.py`: `ast_signature(...)`, a structural AST signature that
+  ignores source coordinates. It is used by the roundtrip tests.
+
+Supported subset:
+
+| Group | pycparser nodes |
+|---|---|
+| Structure | `FileAST`, `FuncDef`, `Compound` |
+| Declarations | `Decl`, `TypeDecl`, `IdentifierType`, `Typename`, `FuncDecl`, `ParamList`, `DeclList` (single declaration) |
+| Expressions | `ID`, `Constant`, `BinaryOp`, `UnaryOp`, `Assignment`, `FuncCall`, `ExprList` |
+| Statements | `Return`, `If` / `else`, `While`, `For` |
+
+Conventions of the C rules:
+
+- Expression nodes (`BinaryOp`, `UnaryOp`, `Assignment`) are parenthesized
+  to preserve structure. Contexts `statement_` and `bare_` produce the
+  statement form (with `;`) and the unparenthesized form (for conditions
+  and `for` headers).
+- Initializers, parameters, `else` branches, `return` values and `for`
+  header parts are optional (`optional`).
+- Unary operators that are written after the operand (`x++`) are selected
+  with `when` on the operator.
+- Branches of `if`, `while` and `for` use the `branch` and `else_branch`
+  contexts: blocks stay on the same line, other statements go on their own
+  indented line.
+
+**JSON example (`json_example/`)**
 - `json_lang_grammar.dsl`: Parlgare grammar for a JSON subset (objects, arrays, strings, numbers, 
 booleans, null)
 - `json_lang_ast.py`: AST classes
@@ -121,12 +247,9 @@ booleans, null)
 - `json_lang_parser.py`: Constructs the Parlgare parser and AST via semantic actions.
 - `formatting_rules.dsl`: formatting rules, e.g:
 ```text
-rule JsonObject(node) =
+rule JsonObject =
     text("{") ++
-    nest(2,
-        softline() ++
-        list(node.members, item, text(",") ++ softline())
-    ) ++
+    nest(2, softline() ++ list(node.members, item)) ++
     softline() ++
     text("}");
 ```
@@ -139,77 +262,67 @@ rule JsonObject(node) =
 - `calc_parser.py`: Parglare parser building the AST
 - `formatting_rules.py`: formatting rules such as:
 ```text
-rule BinaryOp(node) =
-    group(
-        format(node.left) ++ text(" ") ++ node.op ++ softline() ++ format(node.right)
-    );
+rule BinaryOp = 
+    format(node.left) ++ 
+    text(" ") ++ node.op ++ text(" ") ++ 
+    format(node.right);
 ```
 - `test_code.py`: Demo script
-
-## DSL overview
-**Rule declarations**
-
-Each rule binds a node type to a document expression:
-```text
-rule BinaryOp(node) =
-    format(node.left) ++ text(" ") ++ node.op ++ softline() ++ format(node.right);
-
-rule JsonArray(node) =
-    group(
-        text("[") ++
-        nest(2,
-            softline() ++
-            list(node.values, item, text(",") ++ softline())
-        ) ++
-        softline() ++
-        text("]")
-    );
-```
-Formatter matches rules by `type(node).__name__`
-
-**Core combinators**:
- - `text(str)`: literal text
- - `line()`: hard line break
- - `softline()`: space if the group fits on one line, newline otherwise
- - `concat`/`++`: concatenation
- - `nest(indent, doc)`: indent nested content by indent spaces
- - `group(doc)`: try flat layout first, fall back to broken layout if width exceeded
- - `align(doc)`: align continuation lines with the first line
- - `format(path)`: recursively format `node` or child attributes
- - `list(path, item, separator)`: Iterator over a list attribute, formatting each `item` with optional separator
- - `lower(value)`, `upper(value)`, `escaped(value)`: string transformations
 
 **Tests and how to run**
 From the project root:
 ```bash
-# Install in editable mode
-python -m pip install -e .
+# Install in editable mode, with the test dependencies
+# (pytest and pycparser, which the C example and C tests need)
+python -m pip install -e ".[test]"
 
 # Run all tests
-pytest
+python -m pytest
 
-# Run JSON example
-python examples/json_example/test_code.py
+# Run the examples
+python -m examples.json_example.test_code
+python -m examples.calc_example.test_code
+```
 
-# Run calc example
-python examples/calc_example/test_code.py
+To run only the C example without the test tooling, install `pycparser`
+through the extra:
+
+```bash
+python -m pip install -e ".[c-example]"
 ```
 
 The tests cover:
-- Document model constructors and basic combinators
-- Layout behavior for `group`, `nest`, `softline`.
-- DSL parsing and compilation
-- Formatter behavior and integration with JSON and calc example language
 
-**Limitations and future work**
+- Document model constructors and combinators.
+- Layout behavior for `group`, `nest` and `softline`.
+- DSL parsing and compilation, including `optional`, `when` and contextual
+  `format`.
+- Formatter behavior with the JSON example.
+- C roundtrip tests: each source is formatted at widths from 1 to 200,
+  re-parsed, and compared structurally with the original AST. A second
+  formatting pass must produce identical text (idempotence). Exact-layout
+  tests check representative outputs.
 
-Current limitations:
-- Comments and original formatting are not preserved (one-way AST to text transformation)
-- Formatting is driven by a single rule per node type (selected by class name)
-- No format-preserving or incremental editing yet
+Roundtrip tests show that formatting preserves the structure of the
+supported subset. They do not prove correctness for all of C.
 
-Planned or possible extensions:
-- Comment preservation and round-trip formatting
-- Format-preserving transformations
-- Rule inheritance / overrides and configuration profiles
+## Limitations
+
+- One-way AST to text. Comments and original formatting are not preserved.
+  `pycparser` does not keep comments or preprocessor directives.
+- A node class has one default rule, plus optional contextual variants.
+- Nodes without a rule raise `FormatterError`. This is not guaranteed for
+  all unsupported constructs: a rule that ignores fields (for example
+  qualifiers and storage classes in the C `Decl` rule) drops them silently.
+- Not supported in the C example: pointers and arrays, `struct`/`union`/
+  `enum`/`typedef`, `switch`, `do`/`while`, `break`/`continue`/`goto`,
+  ternary and cast expressions, initializer lists, qualifiers and storage
+  classes (`const`, `static`, ...), several declarations in one `for` init,
+  and `sizeof(type)`.
+
+## Possible Extensions
+
+- Comment preservation and format-preserving transformations.
+- Rule inheritance, overrides and configuration profiles.
+- Minimal-parentheses printing based on operator precedence.
 - LSP integration for on the fly formatting from the same grammar and DSL

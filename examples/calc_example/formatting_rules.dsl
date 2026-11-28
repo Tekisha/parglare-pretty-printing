@@ -1,9 +1,9 @@
-rule Calc(node) = list(node.expressions, item, line());
+rule Calc = list(node.expressions, item, line());
 
-rule ExprLine(node) = format(node.expr) ++ line();
+rule ExprLine = format(node.expr) ++ line();
 
-rule BinaryOp(node) = format(node.left) ++ text(" ") ++ node.op ++ text(" ") ++ format(node.right);
+rule BinaryOp = format(node.left) ++ text(" ") ++ node.op ++ text(" ") ++ format(node.right);
 
-rule Number(node) = node.value;
+rule Number = node.value;
 
-rule Paren(node) = text("(") ++ format(node.expr) ++ text(")");
+rule Paren = text("(") ++ format(node.expr) ++ text(")");

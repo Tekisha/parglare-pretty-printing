@@ -14,14 +14,14 @@ KEY RULES (see the project's introductory chapter on the parglare API):
   - Grammar.from_string(...) produces a Grammar instance; Parser(grammar,
     actions=actions) receives the actions dict directly via the
     constructor.
-  - Named matches (name=, params=, body=, left=, right=) in the grammar
+  - Named matches (name=, body=, left=, right=) in the grammar
     AUTOMATICALLY generate the built-in 'obj' action if we don't define
     a custom action for that rule - but here we WRITE custom actions
     everywhere we need a typed dsl_ast class (e.g. RuleDecl instead of
     a generated anonymous class), which is the recommended approach
     when a custom dataclass hierarchy is needed. Named matches can still
     be received as extra keyword arguments to the action (e.g.
-    action(context, nodes, name=..., params=..., body=...)) - we use
+    action(context, nodes, name=..., body=...)) - we use
     that form wherever it shortens the code.
 """
 import re
@@ -33,39 +33,52 @@ from .grammar import DSL_GRAMMAR
 from .ast import (
     RuleFile, RuleDecl, AttrPath,
     DocConcat, DocText, DocLine, DocSoftline, DocNest, DocGroup, DocAlign,
-    DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
+    DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional, DocWhen,
 )
 
 def _rule_file_action(context, nodes):
-    # RuleFile: RuleDecl+ ;  -> nodes[0] is a list of RuleDecl (since
-    # RuleDecl+ is a built-in repetition, parglare already collects it
-    # into a list)
-    return RuleFile(rules=list(nodes[0]))
+    # RuleFile: RuleDecl+ ;  -> a rule declaration with several names
+    # expands to several RuleDecl objects, so the collected list may
+    # contain nested lists.
+    return RuleFile(rules=list(_flatten(nodes[0])))
 
 
-def _rule_decl_action(context, nodes, name, params, body):
-    # RuleDecl: "rule" name=Ident "(" params=ParamList? ")" "=" body=DocExpr ";" ;
-    # named-match kwargs: name (str), params (list[str] or None), body (DocExpr)
-    return RuleDecl(name=name, params=params or [], body=body)
+def _rule_names_append_action(context, nodes):
+    # RuleNames: RuleNames "," Ident ;
+    return nodes[0] + [nodes[2]]
 
 
-def _param_list_action(context, nodes):
-    # ParamList: Ident ("," Ident)* ;
-    # nodes[0] is the first Ident (str), nodes[1] is a list of the
-    # additional Idents collected from the ("," Ident)* repetition -
-    # parglare returns a list of (",", Ident) pairs per iteration, or a
-    # list of Ident values depending on the anonymous rule; here we
-    # explicitly filter out only the Ident values.
-    first = nodes[0]
-    rest_group = nodes[1] if len(nodes) > 1 else []
-    rest = []
-    for item in rest_group:
-        # svaka iteracija (","  Ident) - Parglare vraca listu [",", Ident]
+def _rule_names_single_action(context, nodes):
+    # RuleNames: Ident ;
+    return [nodes[0]]
+
+
+def _rule_context_action(context, nodes):
+    # RuleContext: "in" Ident ;
+    return nodes[1]
+
+
+def _rule_decl_action(context, nodes):
+    # RuleDecl: "rule" RuleNames RuleContext? "=" DocExpr ";"
+    names, ctx, body = nodes[1], nodes[2] or None, nodes[4]
+    return [
+        RuleDecl(
+            name=f"{ctx}_{name}" if ctx else name,
+            body=body,
+            context=ctx,
+        )
+        for name in names
+    ]
+
+def _unquote(raw):
+    return re.sub(r'\\(.)', r'\1', raw[1:-1])
+
+def _flatten(items):
+    for item in items:
         if isinstance(item, list):
-            rest.append(item[1])
+            yield from _flatten(item)
         else:
-            rest.append(item)
-    return [first] + rest
+            yield item
 
 
 # ---------------------------------------------------------------------------
@@ -144,6 +157,42 @@ def _doc_term_json_escaped_action(context, nodes):
     # DocTerm: "escaped" "(" AttrPath ")"
     return DocJsonEscaped(path=nodes[2])
 
+def _doc_term_optional_action(context, nodes):
+    # nodes: ["optional", "(", AttrPath, ",", DocExpr, ")"]
+    return DocOptional(
+        path=nodes[2],
+        body=nodes[4],
+    )
+
+def _doc_term_format_context_action(context, nodes):
+    # ["format", "(", AttrPath, ",", Ident, ")"]
+    return DocFormat(
+        path=nodes[2],
+        context=nodes[4],
+    )
+
+def _doc_term_when_action(context, nodes):
+    # ["when", "(", AttrPath, ",", String, ",", DocExpr, ")"]
+    return DocWhen(
+        path=nodes[2],
+        value=_unquote(nodes[4]),
+        then=nodes[6],
+    )
+
+
+def _doc_term_when_else_action(context, nodes):
+    # ["when", "(", AttrPath, ",", String, ",", DocExpr, ",", DocExpr, ")"]
+    return DocWhen(
+        path=nodes[2],
+        value=_unquote(nodes[4]),
+        then=nodes[6],
+        otherwise=nodes[8],
+    )
+
+def _doc_term_string_action(context, nodes):
+    # DocTerm: StringLiteral ;  -- shorthand for text("...")
+    return DocText(value=_unquote(nodes[0]))
+
 def _doc_term_attrpath_action(context, nodes):
     # DocTerm: AttrPath ;
     return DocAttrRef(path=nodes[0])
@@ -171,11 +220,15 @@ def _attr_path_action(context, nodes):
 actions = {
     "RuleFile": _rule_file_action,
     "RuleDecl": _rule_decl_action,
-    "ParamList": _param_list_action,
+    "RuleNames": [
+        _rule_names_append_action,  # RuleNames "," Ident
+        _rule_names_single_action,  # Ident
+    ],
     "DocExpr": [
         _doc_expr_concat_action,   # DocExpr "++" DocTerm {left}
         _doc_expr_single_action,   # DocTerm
     ],
+    "RuleContext": _rule_context_action,
     "DocTerm": [
         _doc_term_text_action,      # "text" "(" StringLiteral ")"
         _doc_term_line_action,      # "line" "(" ")"
@@ -189,6 +242,11 @@ actions = {
         _doc_term_lower_action,     # "lower" "(" AttrPath ")"
         _doc_term_upper_action,     # "upper" "(" AttrPath ")"
         _doc_term_json_escaped_action,   # "escaped" "(" AttrPath ")"
+        _doc_term_optional_action,  # "optional" "(" AttrPath "," DocExpr ")"
+        _doc_term_format_context_action, # "format" "(" AttrPath "," Ident, ")"
+        _doc_term_when_action, # "when" "(" AttrPath "," String "," DocExpr ")"
+        _doc_term_when_else_action, # when" "(" AttrPath "," String "," DocExpr "," DocExpr ")"
+        _doc_term_string_action,
         _doc_term_attrpath_action,  # AttrPath
     ],
     "AttrPath": _attr_path_action,

@@ -3,10 +3,10 @@ DSL grammar for declaratively defining formatting rules.
 
 DSL syntax (example):
 
-    rule binary_op(node) =
+    rule binary_op =
         format(node.left) ++ text(" + ") ++ format(node.right);
 
-    rule block(node) =
+    rule block =
         text("{") ++
         nest(2, line() ++ list(node.stmts, format(item))) ++
         line() ++ text("}");
@@ -27,7 +27,7 @@ Notes on grammar structure (see the project's introductory chapter):
     modeled via a dedicated `AttrPath: Ident ("." Ident)*` rule so the
     DSL can reference nested AST node fields without special syntax
     for it.
-  - Named matches (name=, params=, body=, left=, right=) are used
+  - Named matches (name=, body=, left=, right=) are used
     wherever they reduce the need for manually writing actions - see
     dsl_parser.py.
 """
@@ -35,11 +35,15 @@ Notes on grammar structure (see the project's introductory chapter):
 DSL_GRAMMAR = r"""
 RuleFile: RuleDecl+ ;
 
-RuleDecl: "rule" name=Ident "(" params=ParamList? ")" "=" body=DocExpr ";" ;
+RuleDecl: "rule" RuleNames RuleContext? "=" DocExpr ";" ;
 
-ParamList: Ident ("," Ident)* ;
+RuleContext: "in" Ident ;
 
-DocExpr: left=DocExpr "++" right=DocTerm  {left}
+RuleNames: RuleNames "," Ident
+         | Ident
+         ;
+
+DocExpr: left=DocExpr "++" right=DocTerm
        | DocTerm
        ;
 
@@ -55,6 +59,11 @@ DocTerm: "text" "(" StringLiteral ")"
        | "lower" "(" AttrPath ")"
        | "upper" "(" AttrPath ")"
        | "escaped" "(" AttrPath ")"
+       | "optional" "(" AttrPath "," DocExpr ")"
+       | "format" "(" AttrPath "," Ident ")"
+       | "when" "(" AttrPath "," StringLiteral "," DocExpr ")"
+       | "when" "(" AttrPath "," StringLiteral "," DocExpr "," DocExpr ")"
+       | StringLiteral
        | AttrPath
        ;
 
@@ -62,8 +71,13 @@ ListSeparator: "," separator=DocExpr ;
 
 AttrPath: Ident (Dot Ident)* ;
 
+LAYOUT: LayoutItem | LAYOUT LayoutItem | EMPTY ;
+LayoutItem: WS | Comment ;
+
 terminals
 
+WS: /\s+/ ;
+Comment: /\/\/.*/ ;
 Dot: "." ;
 Ident: /[a-zA-Z_][a-zA-Z0-9_]*/ ;
 StringLiteral: /"(\\.|[^"\\])*"/ ;

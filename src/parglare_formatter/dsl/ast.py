@@ -14,6 +14,7 @@ document_model.py.
 from dataclasses import dataclass, field
 from typing import List, Optional, Union, Dict
 
+IMPLICIT_PARAM = "node"
 
 @dataclass
 class AttrPath:
@@ -70,8 +71,9 @@ class DocAlign:
 
 @dataclass
 class DocFormat:
-    """format(AttrPath) - recursive call into the formatter for a sub-node."""
+    """Format a child node, optionally selecting a contextual rule."""
     path: AttrPath
+    context: Optional[str] = None
 
 
 @dataclass
@@ -113,13 +115,27 @@ class DocAttrRef:
     whose value is inserted directly as text (e.g. for primitive fields)."""
     path: AttrPath
 
+@dataclass
+class DocOptional:
+    """optional(AttrPath, DocExpr) - emit body unless the value is None."""
+    path: AttrPath
+    body: "DocExpr"
+
+@dataclass
+class DocWhen:
+    """when(AttrPath, "literal", then[, otherwise])"""
+    path: AttrPath
+    value: str
+    then: "DocExpr"
+    otherwise: Optional["DocExpr"] = None
+
 
 # DocExpr = "DocConcat | DocText | DocLine | DocSoftline | DocNest | " \
-#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef"
+#           "DocGroup | DocAlign | DocFormat | DocList | DocItem | DocAttrRef | DocOptional | DocWhen "
 
 DocExpr = Union[
     DocConcat, DocText, DocLine, DocSoftline, DocNest,
-    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped,
+    DocGroup, DocAlign, DocFormat, DocList, DocItem, DocAttrRef, DocLower, DocUpper, DocJsonEscaped, DocOptional, DocWhen
 ]
 
 # ---------------------------------------------------------------------------
@@ -128,10 +144,10 @@ DocExpr = Union[
 
 @dataclass
 class RuleDecl:
-    """rule name(params) = body ;"""
+    """rule name = body ;"""
     name: str
-    params: List[str] = field(default_factory=list)
     body: Optional[object] = None  # DocExpr
+    context: Optional[str] = field(default=None, compare=False)
 
 
 @dataclass

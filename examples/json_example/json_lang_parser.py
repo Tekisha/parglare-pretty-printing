@@ -44,6 +44,26 @@ def build_parser() -> Parser:
 
 
 if __name__ == "__main__":
+    grammar = Grammar.from_string(load_grammar_source())
+
+    print("=== PRODUKCIJE ===")
+    for p in grammar.productions:
+        print(f"[{p.prod_id}] {p}")
+        print("    symbol :", p.symbol, type(p.symbol).__name__)
+        print("    rhs    :", [(s.name, type(s).__name__) for s in p.rhs])
+        asg = getattr(p, "assignments", None)
+        if asg:
+            for name, a in asg.items():
+                print("    assign :", name, "->", vars(a) if hasattr(a, "__dict__") else a)
+
+    print("\n=== TERMINALI ===")
+    for name, t in grammar.terminals.items():
+        rec = getattr(t, "recognizer", None)
+        print(name, "->", type(rec).__name__, getattr(rec, "value", None))
+
+    print("\n=== ATRIBUTI JEDNE PRODUKCIJE ===")
+    p0 = next(p for p in grammar.productions if p.symbol.name == "JsonObject")
+    print(sorted(a for a in dir(p0) if not a.startswith("_")))
+
     parser = build_parser()
-    ast = parser.parse('{"x": 1, "y": [2, 3]}')
-    print(f"AST: {ast}")
+    print("\nAST:", parser.parse('{"x": 1, "y": [2, 3]}'))
