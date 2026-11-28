@@ -147,6 +147,7 @@ class RuleDecl:
     """rule name = body ;"""
     name: str
     body: Optional[object] = None  # DocExpr
+    context: Optional[str] = field(default=None, compare=False)
 
 
 @dataclass

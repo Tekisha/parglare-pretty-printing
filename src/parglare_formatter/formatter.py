@@ -139,11 +139,7 @@ class Formatter:
         return render(doc, width=width)
 
     def check(self) -> List[str]:
-        """Report likely mistakes in the rule file.
-
-        Returns an empty list when nothing suspicious is found. It never
-        raises and does not change how formatting behaves.
-        """
+        """Report likely mistakes in the rule file (never raises)."""
         rules = self.rule_file.rules
         names = [rule.name for rule in rules]
 
@@ -152,6 +148,11 @@ class Formatter:
             for expr in _walk(rule.body):
                 if isinstance(expr, DocFormat) and expr.context:
                     used.setdefault(expr.context, rule.name)
+
+        declared = {}
+        for rule in rules:
+            if rule.context:
+                declared.setdefault(rule.context, rule.name)
 
         problems = []
 
@@ -162,12 +163,25 @@ class Formatter:
                     f"has no rules named '{context}_*'."
                 )
 
-        for name in names:
-            prefixes = {name[:i] for i, c in enumerate(name) if c == "_" and i}
+        for context, rule_name in sorted(declared.items()):
+            if context not in used:
+                problems.append(
+                    f"Rule {rule_name!r} is declared 'in {context}', but no "
+                    f"rule uses context {context!r} (typo?)."
+                )
+
+        for rule in rules:
+            if rule.context is not None:
+                continue
+            prefixes = {
+                rule.name[:i]
+                for i, c in enumerate(rule.name)
+                if c == "_" and i
+            }
             if prefixes and not prefixes & used.keys():
                 problems.append(
-                    f"Rule {name!r} looks contextual, but no rule uses "
-                    f"its context (typo?)."
+                    f"Rule {rule.name!r} looks contextual, but no rule "
+                    f"uses its context (typo?)."
                 )
 
         return problems

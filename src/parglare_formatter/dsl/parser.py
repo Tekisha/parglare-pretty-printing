@@ -53,11 +53,22 @@ def _rule_names_single_action(context, nodes):
     return [nodes[0]]
 
 
-def _rule_decl_action(context, nodes, names, body):
-    # RuleDecl: "rule" names=RuleNames "=" body=DocExpr ";" ;
-    # One declaration with several names is shorthand for one rule per
-    # name, all sharing the same body.
-    return [RuleDecl(name=name, body=body) for name in names]
+def _rule_context_action(context, nodes):
+    # RuleContext: "in" Ident ;
+    return nodes[1]
+
+
+def _rule_decl_action(context, nodes):
+    # RuleDecl: "rule" RuleNames RuleContext? "=" DocExpr ";"
+    names, ctx, body = nodes[1], nodes[2] or None, nodes[4]
+    return [
+        RuleDecl(
+            name=f"{ctx}_{name}" if ctx else name,
+            body=body,
+            context=ctx,
+        )
+        for name in names
+    ]
 
 def _unquote(raw):
     return re.sub(r'\\(.)', r'\1', raw[1:-1])
@@ -217,6 +228,7 @@ actions = {
         _doc_expr_concat_action,   # DocExpr "++" DocTerm {left}
         _doc_expr_single_action,   # DocTerm
     ],
+    "RuleContext": _rule_context_action,
     "DocTerm": [
         _doc_term_text_action,      # "text" "(" StringLiteral ")"
         _doc_term_line_action,      # "line" "(" ")"

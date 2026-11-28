@@ -35,7 +35,9 @@ Notes on grammar structure (see the project's introductory chapter):
 DSL_GRAMMAR = r"""
 RuleFile: RuleDecl+ ;
 
-RuleDecl: "rule" names=RuleNames "=" body=DocExpr ";" ;
+RuleDecl: "rule" RuleNames RuleContext? "=" DocExpr ";" ;
+
+RuleContext: "in" Ident ;
 
 RuleNames: RuleNames "," Ident
          | Ident
